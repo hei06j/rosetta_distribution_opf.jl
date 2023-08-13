@@ -12,7 +12,7 @@ import InfrastructureModels
 const PMD = PowerModelsDistribution
 const IM = InfrastructureModels
 
-file_name = "case3_unbalanced.dss"
+file_name = "../data/case3_unbalanced.dss"
 
 # function solve_opf(file_name)
 time_data_start = time()
