@@ -116,10 +116,10 @@ file_name = "./data/case3_unbalanced.dss"
         p_to = [p[:,t_idx]...]
         q_to = [q[:,t_idx]...]
 
-        vm_fr = [vm[:,branch["f_bus"]]...]
-        vm_to = [vm[:,branch["t_bus"]]...]
-        va_fr = [va[:,branch["f_bus"]]...]
-        va_to = [va[:,branch["t_bus"]]...]
+        # vm_fr = [vm[:,branch["f_bus"]]...]
+        # vm_to = [vm[:,branch["t_bus"]]...]
+        # va_fr = [va[:,branch["f_bus"]]...]
+        # va_to = [va[:,branch["t_bus"]]...]
 
         vr_fr = [vr[:,branch["f_bus"]]...]
         vi_fr = [vi[:,branch["f_bus"]]...]
@@ -205,12 +205,12 @@ file_name = "./data/case3_unbalanced.dss"
     total_time = time() - time_data_start
 
     nlp_block = JuMP.MOI.get(model, JuMP.MOI.NLPBlock())
-    total_callback_time =
-        nlp_block.evaluator.eval_objective_timer +
-        nlp_block.evaluator.eval_objective_gradient_timer +
-        nlp_block.evaluator.eval_constraint_timer +
-        nlp_block.evaluator.eval_constraint_jacobian_timer +
-        nlp_block.evaluator.eval_hessian_lagrangian_timer
+    # total_callback_time =
+    #     nlp_block.evaluator.eval_objective_timer +
+    #     nlp_block.evaluator.eval_objective_gradient_timer +
+    #     nlp_block.evaluator.eval_constraint_timer +
+    #     nlp_block.evaluator.eval_constraint_jacobian_timer +
+    #     nlp_block.evaluator.eval_hessian_lagrangian_timer
 
     println("")
     println("\033[1mSummary\033[0m")
@@ -223,14 +223,14 @@ file_name = "./data/case3_unbalanced.dss"
     println("     data time.: $(data_load_time)")
     println("     build time: $(model_build_time)")
     println("     solve time: $(solve_time)")
-    println("      callbacks: $(total_callback_time)")
+    # println("      callbacks: $(total_callback_time)")
     println("")
-    println("   callbacks time:")
-    println("   * obj.....: $(nlp_block.evaluator.eval_objective_timer)")
-    println("   * grad....: $(nlp_block.evaluator.eval_objective_gradient_timer)")
-    println("   * cons....: $(nlp_block.evaluator.eval_constraint_timer)")
-    println("   * jac.....: $(nlp_block.evaluator.eval_constraint_jacobian_timer)")
-    println("   * hesslag.: $(nlp_block.evaluator.eval_hessian_lagrangian_timer)")
+    # println("   callbacks time:")
+    # println("   * obj.....: $(nlp_block.evaluator.eval_objective_timer)")
+    # println("   * grad....: $(nlp_block.evaluator.eval_objective_gradient_timer)")
+    # println("   * cons....: $(nlp_block.evaluator.eval_constraint_timer)")
+    # println("   * jac.....: $(nlp_block.evaluator.eval_constraint_jacobian_timer)")
+    # println("   * hesslag.: $(nlp_block.evaluator.eval_hessian_lagrangian_timer)")
     println("")
 
     return Dict(
@@ -243,7 +243,7 @@ file_name = "./data/case3_unbalanced.dss"
         "time_data" => data_load_time,
         "time_build" => model_build_time,
         "time_solve" => solve_time,
-        "time_callbacks" => total_callback_time,
+        # "time_callbacks" => total_callback_time,
     )
 # end
 
