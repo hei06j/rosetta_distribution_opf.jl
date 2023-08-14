@@ -19,7 +19,7 @@ file_name = "./data/case3_unbalanced.dss"
     time_data_start = time()
 
     data = PMD.parse_file(file_name)
-
+    data["settings"]["sbase_default"] = 1.0
 
     #remove voltage source internal impedance branch
     data["voltage_source"]["source"]["rs"]*=0 
@@ -35,6 +35,15 @@ file_name = "./data/case3_unbalanced.dss"
         bus["vmin"] = 0.90*ones(3)
         bus["vmax"] = 1.10*ones(3)
     end
+    for (g,gen) in data["gen"]
+        gen["pmin"] =   0*ones(3);
+        gen["pmax"] =  10*ones(3);
+        gen["qmin"] = -10*ones(3);
+        gen["qmax"] =  10*ones(3);
+    end
+    for (b,branch) in data["branch"]
+        branch["rate_a"] = 8*ones(3)
+    end
     ref = IM.build_ref(data, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
     data_load_time = time() - time_data_start
     time_model_start = time()
@@ -44,6 +53,15 @@ file_name = "./data/case3_unbalanced.dss"
     n_ph = 3
     JuMP.@variable(model, vr[ph in 1:n_ph, i in keys(ref[:bus])])  
     JuMP.@variable(model, vi[ph in 1:n_ph, i in keys(ref[:bus])]) 
+
+    v_start = exp.(im.*collect(0:-1:-2)*2/3*pi)
+    for i in 1:3
+        for j in keys(ref[:bus])
+            JuMP.set_start_value(vr[i,j], real(v_start[i]))
+            JuMP.set_start_value(vi[i,j], imag(v_start[i]))
+        end
+    end
+
     # JuMP.@variable(model, ref[:bus][i]["vmin"][ph] <= vm[ph in 1:n_ph, i in keys(ref[:bus])] <= ref[:bus][i]["vmax"][ph], start=1.0)
     # JuMP.@variable(model, -pi/2 <= va[ph in 1:n_ph, i in keys(ref[:bus])] <= pi/2 , start=0.0)
 
@@ -53,14 +71,15 @@ file_name = "./data/case3_unbalanced.dss"
     JuMP.@variable(model, -ref[:branch][l]["rate_a"][ph] <= p[ph in 1:n_ph, (l,i,j) in ref[:arcs_branch]] <= ref[:branch][l]["rate_a"][ph])
     JuMP.@variable(model, -ref[:branch][l]["rate_a"][ph] <= q[ph in 1:n_ph, (l,i,j) in ref[:arcs_branch]] <= ref[:branch][l]["rate_a"][ph])
 
-    JuMP.@objective(model, Min, sum(gen["cost"][1]*sum(pg[:,i])^2 + gen["cost"][2]*sum(pg[:,i]) for (i,gen) in ref[:gen]))
+    JuMP.@objective(model, Min, sum(gen["cost"][1]*sum(pg[:,i].^2) + gen["cost"][2]*sum(pg[:,i]) for (i,gen) in ref[:gen]))
 
 
-    vref = ref[:ref_buses][2]["vm"] .*exp.(im*ref[:ref_buses][2]["va"])
-    vrefre = real.(vref)
-    vrefim = imag.(vref)
+
 
     for (i,bus) in ref[:ref_buses]
+        vref = bus["vm"] .*exp.(im*bus["va"])
+        vrefre = real.(vref)
+        vrefim = imag.(vref)
         JuMP.@constraint(model, vr[:,i] .== vrefre)
         JuMP.@constraint(model, vr[:,i] .== vrefim)
     end
@@ -82,7 +101,9 @@ file_name = "./data/case3_unbalanced.dss"
             sum([load["qd"] for load in bus_loads], init=[0;0;0]) .+
             sum([shunt["bs"] for shunt in bus_shunts], init=[0;0;0]).*(vr[:,i].^2 + vi[:,i].^2)
         )
-        JuMP.@constraint(model, bus["vmin"].^2 .<= vr[:, i].^2 + vi[:, i].^2  .<= bus["vmax"].^2)
+        if bus["bus_type"] != 3
+            JuMP.@constraint(model, bus["vmin"].^2 .<= vr[:, i].^2 + vi[:, i].^2  .<= bus["vmax"].^2)
+        end
     end
 
     # Branch power flow physics and limit constraints
@@ -157,8 +178,6 @@ file_name = "./data/case3_unbalanced.dss"
 
         # Voltage angle difference limit
         # JuMP.@constraint(model, branch["angmin"] .<= va_fr .- va_to .<= branch["angmax"])
-
-
 
         if haskey(branch, "rate_a") && any(branch["rate_a"] .< Inf)
         # Apparent power limit, from side and to side
