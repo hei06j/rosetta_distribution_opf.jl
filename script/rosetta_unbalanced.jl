@@ -37,12 +37,12 @@ file_name = "./data/case3_unbalanced.dss"
     end
     for (g,gen) in data["gen"]
         gen["pmin"] =   0*ones(3);
-        gen["pmax"] =  10*ones(3);
-        gen["qmin"] = -10*ones(3);
-        gen["qmax"] =  10*ones(3);
+        gen["pmax"] =  20*ones(3);
+        gen["qmin"] = -20*ones(3);
+        gen["qmax"] =  20*ones(3);
     end
     for (b,branch) in data["branch"]
-        branch["rate_a"] = 8*ones(3)
+        branch["rate_a"] = 12*ones(3)
     end
     ref = IM.build_ref(data, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
     data_load_time = time() - time_data_start
