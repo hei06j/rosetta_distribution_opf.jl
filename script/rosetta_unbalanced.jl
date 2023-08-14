@@ -81,7 +81,7 @@ file_name = "./data/case3_unbalanced.dss"
         vrefre = real.(vref)
         vrefim = imag.(vref)
         JuMP.@constraint(model, vr[:,i] .== vrefre)
-        JuMP.@constraint(model, vr[:,i] .== vrefim)
+        JuMP.@constraint(model, vi[:,i] .== vrefim)
     end
 
     for (i,bus) in ref[:bus]
