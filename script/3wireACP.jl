@@ -57,7 +57,7 @@ function solve_opf_acp(file_name)
     # JuMP.@variable(model, -pi/2 <= va[ph in 1:n_ph, i in keys(ref[:bus])] <= pi/2 , start=0.0)
 
     JuMP.@variable(model, vm[ph in 1:n_ph, i in keys(ref[:bus])], start=1.0)  
-    JuMP.@variable(model, va[ph in 1:n_ph, i in keys(ref[:bus])], start=0.0) 
+    JuMP.@variable(model, va[ph in 1:n_ph, i in keys(ref[:bus])]) 
 
     va_start = collect(0:-1:-2)*2/3*pi
     for i in 1:3
@@ -107,15 +107,15 @@ function solve_opf_acp(file_name)
         f_idx = (i, branch["f_bus"], branch["t_bus"])
         t_idx = (i, branch["t_bus"], branch["f_bus"])
 
-        p_fr = [p[:,f_idx]...]
-        q_fr = [q[:,f_idx]...]
-        p_to = [p[:,t_idx]...]
-        q_to = [q[:,t_idx]...]
+        p_fr = p[:,f_idx]
+        q_fr = q[:,f_idx]
+        p_to = p[:,t_idx]
+        q_to = q[:,t_idx]
 
-        vm_fr = [vm[:,branch["f_bus"]]...]
-        vm_to = [vm[:,branch["t_bus"]]...]
-        va_fr = [va[:,branch["f_bus"]]...]
-        va_to = [va[:,branch["t_bus"]]...]
+        vm_fr = vm[:,branch["f_bus"]]
+        vm_to = vm[:,branch["t_bus"]]
+        va_fr = va[:,branch["f_bus"]]
+        va_to = va[:,branch["t_bus"]]
 
         G, B = PMD.calc_branch_y(branch)
         G_fr = branch["g_fr"]
@@ -123,24 +123,54 @@ function solve_opf_acp(file_name)
         G_to = branch["g_to"]
         B_to = branch["b_to"]
 
-        for (idx, (fc,tc)) in enumerate(zip(1:3,1:3))        
-            JuMP.@NLconstraint(model, p_fr[fc] == (G[idx,idx]+G_fr[idx,idx])*vm_fr[fc]^2
-                    +sum( (G[idx,jdx]+G_fr[idx,jdx]) * vm_fr[fc]*vm_fr[fd]*cos(va_fr[fc]-va_fr[fd])
-                        +(B[idx,jdx]+B_fr[idx,jdx]) * vm_fr[fc]*vm_fr[fd]*sin(va_fr[fc]-va_fr[fd])
-                        for (jdx, (fd,td)) in enumerate(zip(1:3,1:3)) if idx != jdx)
-                    +sum( -G[idx,jdx]*vm_fr[fc]*vm_to[td]*cos(va_fr[fc]-va_to[td])
-                        -B[idx,jdx]*vm_fr[fc]*vm_to[td]*sin(va_fr[fc]-va_to[td])
-                        for (jdx, (fd,td)) in enumerate(zip(1:3,1:3)))
+        for pp in 1:3      #p
+            JuMP.@NLconstraint(model, p_fr[pp] == 
+                    (G[pp,pp]+G_fr[pp,pp])*vm_fr[pp]^2
+                    +sum( 
+                         (G[pp,qq]+G_fr[pp,qq])*vm_fr[pp]*vm_fr[qq]*cos(va_fr[pp]-va_fr[qq])
+                        +(B[pp,qq]+B_fr[pp,qq])*vm_fr[pp]*vm_fr[qq]*sin(va_fr[pp]-va_fr[qq])
+                        for qq in 1:3 if pp != qq)
+                    +sum( 
+                        -G[pp,qq]*vm_fr[pp]*vm_to[qq]*cos(va_fr[pp]-va_to[qq])
+                        -B[pp,qq]*vm_fr[pp]*vm_to[qq]*sin(va_fr[pp]-va_to[qq])
+                        for qq in 1:3)
                     )
             
         
-            JuMP.@NLconstraint(model, q_fr[fc] == -(B[idx,idx]+B_fr[idx,idx])*vm_fr[fc]^2
-                    -sum( (B[idx,jdx]+B_fr[idx,jdx])*vm_fr[fc]*vm_fr[fd]*cos(va_fr[fc]-va_fr[fd])
-                        -(G[idx,jdx]+G_fr[idx,jdx])*vm_fr[fc]*vm_fr[fd]*sin(va_fr[fc]-va_fr[fd])
-                        for (jdx, (fd,td)) in enumerate(zip(1:3,1:3)) if idx != jdx)
-                    -sum(-B[idx,jdx]*vm_fr[fc]*vm_to[td]*cos(va_fr[fc]-va_to[td])
-                        +G[idx,jdx]*vm_fr[fc]*vm_to[td]*sin(va_fr[fc]-va_to[td])
-                        for (jdx, (fd,td)) in enumerate(zip(1:3,1:3)))
+            JuMP.@NLconstraint(model, q_fr[pp] == 
+                    -(B[pp,pp]+B_fr[pp,pp])*vm_fr[pp]^2
+                    -sum( 
+                         (B[pp,qq]+B_fr[pp,qq])*vm_fr[pp]*vm_fr[qq]*cos(va_fr[pp]-va_fr[qq])
+                        -(G[pp,qq]+G_fr[pp,qq])*vm_fr[pp]*vm_fr[qq]*sin(va_fr[pp]-va_fr[qq])
+                        for qq in 1:3 if pp != qq)
+                    -sum(
+                        - B[pp,qq]*vm_fr[pp]*vm_to[qq]*cos(va_fr[pp]-va_to[qq])
+                        + G[pp,qq]*vm_fr[pp]*vm_to[qq]*sin(va_fr[pp]-va_to[qq])
+                        for qq in 1:3)
+                    )
+            JuMP.@NLconstraint(model, p_to[pp] == 
+                    (G[pp,pp]+G_to[pp,pp])*vm_to[pp]^2
+                    +sum( 
+                         (G[pp,qq]+G_to[pp,qq])*vm_to[pp]*vm_to[qq]*cos(va_to[pp]-va_to[qq])
+                        +(B[pp,qq]+B_to[pp,qq])*vm_to[pp]*vm_to[qq]*sin(va_to[pp]-va_to[qq])
+                        for qq in 1:3 if pp != qq)
+                    +sum( 
+                        -G[pp,qq]*vm_to[pp]*vm_fr[qq]*cos(va_to[pp]-va_fr[qq])
+                        -B[pp,qq]*vm_to[pp]*vm_fr[qq]*sin(va_to[pp]-va_fr[qq])
+                        for qq in 1:3)
+                    )
+            
+        
+            JuMP.@NLconstraint(model, q_to[pp] == 
+                    -(B[pp,pp]+B_to[pp,pp])*vm_to[pp]^2
+                    -sum( 
+                         (B[pp,qq]+B_to[pp,qq])*vm_to[pp]*vm_to[qq]*cos(va_to[pp]-va_to[qq])
+                        -(G[pp,qq]+G_to[pp,qq])*vm_to[pp]*vm_to[qq]*sin(va_to[pp]-va_to[qq])
+                        for qq in 1:3 if pp != qq)
+                    -sum(
+                        - B[pp,qq]*vm_to[pp]*vm_fr[qq]*cos(va_to[pp]-va_fr[qq])
+                        + G[pp,qq]*vm_to[pp]*vm_fr[qq]*sin(va_to[pp]-va_fr[qq])
+                        for qq in 1:3)
                     )
         end
      
@@ -180,8 +210,10 @@ function solve_opf_acp(file_name)
         nlp_block.evaluator.eval_constraint_jacobian_timer +
         nlp_block.evaluator.eval_hessian_lagrangian_timer
 
-    @show JuMP.value.(vm)
-    @show JuMP.value.(va)
+    # @show JuMP.value.(vm)
+    # @show JuMP.value.(va)
+    # @show (JuMP.value.(pg) .+ im.* JuMP.value.(qg))
+
 
     println("")
     println("\033[1mSummary\033[0m")
