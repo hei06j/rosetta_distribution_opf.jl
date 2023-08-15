@@ -204,7 +204,7 @@ file_name = "./data/case3_unbalanced.dss"
     solve_time = time() - time_solve_start
     total_time = time() - time_data_start
 
-    nlp_block = JuMP.MOI.get(model, JuMP.MOI.NLPBlock())
+    # nlp_block = JuMP.MOI.get(model, JuMP.MOI.NLPBlock())
     # total_callback_time =
     #     nlp_block.evaluator.eval_objective_timer +
     #     nlp_block.evaluator.eval_objective_gradient_timer +
