@@ -15,7 +15,7 @@ const IM = InfrastructureModels
 
 file_name = "./data/case3_unbalanced.dss"
 
-# function solve_opf(file_name)
+function solve_opf_acr(file_name)
     time_data_start = time()
 
     data = PMD.parse_file(file_name)
@@ -40,6 +40,7 @@ file_name = "./data/case3_unbalanced.dss"
         gen["pmax"] =  20*ones(3);
         gen["qmin"] = -20*ones(3);
         gen["qmax"] =  20*ones(3);
+        gen["cost"] *= 1000
     end
     for (b,branch) in data["branch"]
         branch["rate_a"] = 12*ones(3)
@@ -49,7 +50,7 @@ file_name = "./data/case3_unbalanced.dss"
     time_model_start = time()
 
     model = JuMP.Model(Ipopt.Optimizer)
-    #JuMP.set_optimizer_attribute(model, "print_level", 0)
+    JuMP.set_optimizer_attribute(model, "print_level", 0)
     n_ph = 3
     JuMP.@variable(model, vr[ph in 1:n_ph, i in keys(ref[:bus])])  
     JuMP.@variable(model, vi[ph in 1:n_ph, i in keys(ref[:bus])]) 
@@ -62,19 +63,14 @@ file_name = "./data/case3_unbalanced.dss"
         end
     end
 
-    # JuMP.@variable(model, ref[:bus][i]["vmin"][ph] <= vm[ph in 1:n_ph, i in keys(ref[:bus])] <= ref[:bus][i]["vmax"][ph], start=1.0)
-    # JuMP.@variable(model, -pi/2 <= va[ph in 1:n_ph, i in keys(ref[:bus])] <= pi/2 , start=0.0)
-
     JuMP.@variable(model, ref[:gen][i]["pmin"][ph] <= pg[ph in 1:n_ph, i in keys(ref[:gen])] <= ref[:gen][i]["pmax"][ph])
     JuMP.@variable(model, ref[:gen][i]["qmin"][ph] <= qg[ph in 1:n_ph, i in keys(ref[:gen])] <= ref[:gen][i]["qmax"][ph])
 
     JuMP.@variable(model, -ref[:branch][l]["rate_a"][ph] <= p[ph in 1:n_ph, (l,i,j) in ref[:arcs_branch]] <= ref[:branch][l]["rate_a"][ph])
     JuMP.@variable(model, -ref[:branch][l]["rate_a"][ph] <= q[ph in 1:n_ph, (l,i,j) in ref[:arcs_branch]] <= ref[:branch][l]["rate_a"][ph])
 
-    JuMP.@objective(model, Min, sum(gen["cost"][1]*sum(pg[:,i].^2) + gen["cost"][2]*sum(pg[:,i]) for (i,gen) in ref[:gen]))
-
-
-
+    # JuMP.@objective(model, Min, sum(gen["cost"][1]*sum(pg[:,i].^2) + gen["cost"][2]*sum(pg[:,i]) for (i,gen) in ref[:gen]))
+    JuMP.@objective(model, Min, sum(gen["cost"][1]*sum(pg[:,i]) for (i,gen) in ref[:gen]))
 
     for (i,bus) in ref[:ref_buses]
         vref = bus["vm"] .*exp.(im*bus["va"])
@@ -116,11 +112,6 @@ file_name = "./data/case3_unbalanced.dss"
         p_to = [p[:,t_idx]...]
         q_to = [q[:,t_idx]...]
 
-        # vm_fr = [vm[:,branch["f_bus"]]...]
-        # vm_to = [vm[:,branch["t_bus"]]...]
-        # va_fr = [va[:,branch["f_bus"]]...]
-        # va_to = [va[:,branch["t_bus"]]...]
-
         vr_fr = [vr[:,branch["f_bus"]]...]
         vi_fr = [vi[:,branch["f_bus"]]...]
         vr_to = [vr[:,branch["t_bus"]]...]
@@ -128,8 +119,6 @@ file_name = "./data/case3_unbalanced.dss"
 
 
         g, b = PMD.calc_branch_y(branch)
-        # tr, ti = PowerModels.calc_branch_t(branch)
-        # ttm = tr^2 + ti^2
         g_fr = branch["g_fr"]
         b_fr = branch["b_fr"]
         g_to = branch["g_to"]
@@ -211,6 +200,8 @@ file_name = "./data/case3_unbalanced.dss"
     #     nlp_block.evaluator.eval_constraint_timer +
     #     nlp_block.evaluator.eval_constraint_jacobian_timer +
     #     nlp_block.evaluator.eval_hessian_lagrangian_timer
+    @show abs.(JuMP.value.(vr) .+ im.* JuMP.value.(vi))
+    @show angle.(JuMP.value.(vr) .+ im.* JuMP.value.(vi))
 
     println("")
     println("\033[1mSummary\033[0m")
@@ -245,8 +236,8 @@ file_name = "./data/case3_unbalanced.dss"
         "time_solve" => solve_time,
         # "time_callbacks" => total_callback_time,
     )
-# end
+end
 
 # # if isinteractive() == false
-#     result = solve_opf(file_name)
+    resultacr = solve_opf_acr(file_name)
 # # end

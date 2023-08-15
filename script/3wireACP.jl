@@ -15,7 +15,7 @@ const IM = InfrastructureModels
 
 file_name = "./data/case3_unbalanced.dss"
 
-# function solve_opf(file_name)
+function solve_opf_acp(file_name)
     time_data_start = time()
 
     data = PMD.parse_file(file_name)
@@ -40,6 +40,8 @@ file_name = "./data/case3_unbalanced.dss"
         gen["pmax"] =  20*ones(3);
         gen["qmin"] = -20*ones(3);
         gen["qmax"] =  20*ones(3);
+        gen["cost"] *= 1000
+
     end
     for (b,branch) in data["branch"]
         branch["rate_a"] = 12*ones(3)
@@ -49,10 +51,13 @@ file_name = "./data/case3_unbalanced.dss"
     time_model_start = time()
 
     model = JuMP.Model(Ipopt.Optimizer)
-    #JuMP.set_optimizer_attribute(model, "print_level", 0)
+    JuMP.set_optimizer_attribute(model, "print_level", 0)
     n_ph = 3
+        # JuMP.@variable(model, ref[:bus][i]["vmin"][ph] <= vm[ph in 1:n_ph, i in keys(ref[:bus])] <= ref[:bus][i]["vmax"][ph], start=1.0)
+    # JuMP.@variable(model, -pi/2 <= va[ph in 1:n_ph, i in keys(ref[:bus])] <= pi/2 , start=0.0)
+
     JuMP.@variable(model, vm[ph in 1:n_ph, i in keys(ref[:bus])], start=1.0)  
-    JuMP.@variable(model, va[ph in 1:n_ph, i in keys(ref[:bus])]) 
+    JuMP.@variable(model, va[ph in 1:n_ph, i in keys(ref[:bus])], start=0.0) 
 
     va_start = collect(0:-1:-2)*2/3*pi
     for i in 1:3
@@ -61,16 +66,14 @@ file_name = "./data/case3_unbalanced.dss"
         end
     end
 
-    # JuMP.@variable(model, ref[:bus][i]["vmin"][ph] <= vm[ph in 1:n_ph, i in keys(ref[:bus])] <= ref[:bus][i]["vmax"][ph], start=1.0)
-    # JuMP.@variable(model, -pi/2 <= va[ph in 1:n_ph, i in keys(ref[:bus])] <= pi/2 , start=0.0)
-
     JuMP.@variable(model, ref[:gen][i]["pmin"][ph] <= pg[ph in 1:n_ph, i in keys(ref[:gen])] <= ref[:gen][i]["pmax"][ph])
     JuMP.@variable(model, ref[:gen][i]["qmin"][ph] <= qg[ph in 1:n_ph, i in keys(ref[:gen])] <= ref[:gen][i]["qmax"][ph])
 
     JuMP.@variable(model, -ref[:branch][l]["rate_a"][ph] <= p[ph in 1:n_ph, (l,i,j) in ref[:arcs_branch]] <= ref[:branch][l]["rate_a"][ph])
     JuMP.@variable(model, -ref[:branch][l]["rate_a"][ph] <= q[ph in 1:n_ph, (l,i,j) in ref[:arcs_branch]] <= ref[:branch][l]["rate_a"][ph])
 
-    JuMP.@objective(model, Min, sum(gen["cost"][1]*sum(pg[:,i].^2) + gen["cost"][2]*sum(pg[:,i]) for (i,gen) in ref[:gen]))
+    # JuMP.@objective(model, Min, sum(gen["cost"][1]*sum(pg[:,i].^2) + gen["cost"][2]*sum(pg[:,i]) for (i,gen) in ref[:gen]))
+    JuMP.@objective(model, Min, sum(gen["cost"][1]*sum(pg[:,i]) for (i,gen) in ref[:gen]))
 
     for (i,bus) in ref[:ref_buses]
         JuMP.@constraint(model, vm[:,i] .== bus["vm"])
@@ -114,76 +117,35 @@ file_name = "./data/case3_unbalanced.dss"
         va_fr = [va[:,branch["f_bus"]]...]
         va_to = [va[:,branch["t_bus"]]...]
 
-        g, b = PMD.calc_branch_y(branch)
-        # tr, ti = PowerModels.calc_branch_t(branch)
-        # ttm = tr^2 + ti^2
-        g_fr = branch["g_fr"]
-        b_fr = branch["b_fr"]
-        g_to = branch["g_to"]
-        b_to = branch["b_to"]
+        G, B = PMD.calc_branch_y(branch)
+        G_fr = branch["g_fr"]
+        B_fr = branch["b_fr"]
+        G_to = branch["g_to"]
+        B_to = branch["b_to"]
 
-        # JuMP.@NLconstraint(pm.model, p_fr[fc] == (G[idx,idx]+G_fr[idx,idx])*vm_fr[fc]^2
-        #         +sum( (G[idx,jdx]+G_fr[idx,jdx]) * vm_fr[fc]*vm_fr[fd]*cos(va_fr[fc]-va_fr[fd])
-        #              +(B[idx,jdx]+B_fr[idx,jdx]) * vm_fr[fc]*vm_fr[fd]*sin(va_fr[fc]-va_fr[fd])
-        #             for (jdx, (fd,td)) in enumerate(zip(f_connections,t_connections)) if idx != jdx)
-        #         +sum( -G[idx,jdx]*vm_fr[fc]*vm_to[td]*cos(va_fr[fc]-va_to[td])
-        #               -B[idx,jdx]*vm_fr[fc]*vm_to[td]*sin(va_fr[fc]-va_to[td])
-        #             for (jdx, (fd,td)) in enumerate(zip(f_connections,t_connections)))
-        #         )
+        for (idx, (fc,tc)) in enumerate(zip(1:3,1:3))        
+            JuMP.@NLconstraint(model, p_fr[fc] == (G[idx,idx]+G_fr[idx,idx])*vm_fr[fc]^2
+                    +sum( (G[idx,jdx]+G_fr[idx,jdx]) * vm_fr[fc]*vm_fr[fd]*cos(va_fr[fc]-va_fr[fd])
+                        +(B[idx,jdx]+B_fr[idx,jdx]) * vm_fr[fc]*vm_fr[fd]*sin(va_fr[fc]-va_fr[fd])
+                        for (jdx, (fd,td)) in enumerate(zip(1:3,1:3)) if idx != jdx)
+                    +sum( -G[idx,jdx]*vm_fr[fc]*vm_to[td]*cos(va_fr[fc]-va_to[td])
+                        -B[idx,jdx]*vm_fr[fc]*vm_to[td]*sin(va_fr[fc]-va_to[td])
+                        for (jdx, (fd,td)) in enumerate(zip(1:3,1:3)))
+                    )
+            
         
-    
-        # JuMP.@NLconstraint(pm.model, q_fr[fc] == -(B[idx,idx]+B_fr[idx,idx])*vm_fr[fc]^2
-        #         -sum( (B[idx,jdx]+B_fr[idx,jdx])*vm_fr[fc]*vm_fr[fd]*cos(va_fr[fc]-va_fr[fd])
-        #              -(G[idx,jdx]+G_fr[idx,jdx])*vm_fr[fc]*vm_fr[fd]*sin(va_fr[fc]-va_fr[fd])
-        #             for (jdx, (fd,td)) in enumerate(zip(f_connections,t_connections)) if idx != jdx)
-        #         -sum(-B[idx,jdx]*vm_fr[fc]*vm_to[td]*cos(va_fr[fc]-va_to[td])
-        #              +G[idx,jdx]*vm_fr[fc]*vm_to[td]*sin(va_fr[fc]-va_to[td])
-        #             for (jdx, (fd,td)) in enumerate(zip(f_connections,t_connections)))
-        #         )
-
-        # From side of the branch flow
-        JuMP.@constraint(model, p_fr .== diag(
-            (vr_fr*vr_fr' + vi_fr*vi_fr')*g_fr'
-            + 
-            (vi_fr*vr_fr' - vr_fr*vi_fr')*b_fr'
-            +
-            (vr_fr*(vr_fr-vr_to)' + vi_fr*(vi_fr-vi_to)')*g'
-            +
-            (vi_fr*(vr_fr-vr_to)' - vr_fr*(vi_fr-vi_to)')*b'
-            ))
-
-        JuMP.@constraint(model, q_fr .== diag(
-            -(vr_fr*vr_fr' + vi_fr*vi_fr')*b_fr'
-            + 
-            (vi_fr*vr_fr' - vr_fr*vi_fr')*g_fr'
-            -
-            (vr_fr*(vr_fr-vr_to)' + vi_fr*(vi_fr-vi_to)')*b'
-            +
-            (vi_fr*(vr_fr-vr_to)' - vr_fr*(vi_fr-vi_to)')*g'
-            ))
-        
-            JuMP.@constraint(model, p_to .== diag(
-            (vr_to*vr_to' + vi_to*vi_to')*g_to'
-            + 
-            (vi_to*vr_to' - vr_to*vi_to')*b_to'
-            +
-            (vr_to*(vr_to-vr_fr)' + vi_to*(vi_to-vi_fr)')*g'
-            +
-            (vi_to*(vr_to-vr_fr)' - vr_to*(vi_to-vi_fr)')*b'
-            ))
-
-        JuMP.@constraint(model, q_to .== diag(
-            -(vr_to*vr_to' + vi_to*vi_to')*b_to'
-            + 
-            (vi_to*vr_to' - vr_to*vi_to')*g_to'
-            -
-            (vr_to*(vr_to-vr_fr)' + vi_to*(vi_to-vi_fr)')*b'
-            +
-            (vi_to*(vr_to-vr_fr)' - vr_to*(vi_to-vi_fr)')*g'
-            ))
-
+            JuMP.@NLconstraint(model, q_fr[fc] == -(B[idx,idx]+B_fr[idx,idx])*vm_fr[fc]^2
+                    -sum( (B[idx,jdx]+B_fr[idx,jdx])*vm_fr[fc]*vm_fr[fd]*cos(va_fr[fc]-va_fr[fd])
+                        -(G[idx,jdx]+G_fr[idx,jdx])*vm_fr[fc]*vm_fr[fd]*sin(va_fr[fc]-va_fr[fd])
+                        for (jdx, (fd,td)) in enumerate(zip(1:3,1:3)) if idx != jdx)
+                    -sum(-B[idx,jdx]*vm_fr[fc]*vm_to[td]*cos(va_fr[fc]-va_to[td])
+                        +G[idx,jdx]*vm_fr[fc]*vm_to[td]*sin(va_fr[fc]-va_to[td])
+                        for (jdx, (fd,td)) in enumerate(zip(1:3,1:3)))
+                    )
+        end
+     
         # Voltage angle difference limit
-        # JuMP.@constraint(model, branch["angmin"] .<= va_fr .- va_to .<= branch["angmax"])
+        JuMP.@constraint(model, branch["angmin"] .<= va_fr .- va_to .<= branch["angmax"])
 
         if haskey(branch, "rate_a") && any(branch["rate_a"] .< Inf)
         # Apparent power limit, from side and to side
@@ -210,13 +172,16 @@ file_name = "./data/case3_unbalanced.dss"
     solve_time = time() - time_solve_start
     total_time = time() - time_data_start
 
-    # nlp_block = JuMP.MOI.get(model, JuMP.MOI.NLPBlock())
-    # total_callback_time =
-    #     nlp_block.evaluator.eval_objective_timer +
-    #     nlp_block.evaluator.eval_objective_gradient_timer +
-    #     nlp_block.evaluator.eval_constraint_timer +
-    #     nlp_block.evaluator.eval_constraint_jacobian_timer +
-    #     nlp_block.evaluator.eval_hessian_lagrangian_timer
+    nlp_block = JuMP.MOI.get(model, JuMP.MOI.NLPBlock())
+    total_callback_time =
+        nlp_block.evaluator.eval_objective_timer +
+        nlp_block.evaluator.eval_objective_gradient_timer +
+        nlp_block.evaluator.eval_constraint_timer +
+        nlp_block.evaluator.eval_constraint_jacobian_timer +
+        nlp_block.evaluator.eval_hessian_lagrangian_timer
+
+    @show JuMP.value.(vm)
+    @show JuMP.value.(va)
 
     println("")
     println("\033[1mSummary\033[0m")
@@ -229,14 +194,14 @@ file_name = "./data/case3_unbalanced.dss"
     println("     data time.: $(data_load_time)")
     println("     build time: $(model_build_time)")
     println("     solve time: $(solve_time)")
-    # println("      callbacks: $(total_callback_time)")
+    println("      callbacks: $(total_callback_time)")
     println("")
-    # println("   callbacks time:")
-    # println("   * obj.....: $(nlp_block.evaluator.eval_objective_timer)")
-    # println("   * grad....: $(nlp_block.evaluator.eval_objective_gradient_timer)")
-    # println("   * cons....: $(nlp_block.evaluator.eval_constraint_timer)")
-    # println("   * jac.....: $(nlp_block.evaluator.eval_constraint_jacobian_timer)")
-    # println("   * hesslag.: $(nlp_block.evaluator.eval_hessian_lagrangian_timer)")
+    println("   callbacks time:")
+    println("   * obj.....: $(nlp_block.evaluator.eval_objective_timer)")
+    println("   * grad....: $(nlp_block.evaluator.eval_objective_gradient_timer)")
+    println("   * cons....: $(nlp_block.evaluator.eval_constraint_timer)")
+    println("   * jac.....: $(nlp_block.evaluator.eval_constraint_jacobian_timer)")
+    println("   * hesslag.: $(nlp_block.evaluator.eval_hessian_lagrangian_timer)")
     println("")
 
     return Dict(
@@ -249,10 +214,10 @@ file_name = "./data/case3_unbalanced.dss"
         "time_data" => data_load_time,
         "time_build" => model_build_time,
         "time_solve" => solve_time,
-        # "time_callbacks" => total_callback_time,
+        "time_callbacks" => total_callback_time,
     )
-# end
+end
 
 # # if isinteractive() == false
-#     result = solve_opf(file_name)
+    resultacp = solve_opf_acp(file_name)
 # # end

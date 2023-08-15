@@ -24,7 +24,7 @@ New Line.Quad    Bus1=Primary.1.2.3  loadbus.1.2.3  linecode = 4/0QUAD  length=1
 
 !Loads - single phase
 
-New Load.L1 phases=3  loadbus.1.2.3   ( 0.4 3 sqrt / )   kW=3   kvar=3  model=1
+New Load.L1 phases=3  loadbus.1.2.3   ( 0.4 3 sqrt / )   kW=30   kvar=3  model=1
 
 
 
