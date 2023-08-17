@@ -45,30 +45,18 @@ function get_data_math(file_name)
     return data
 end
 
+function get_vm_max_error(solution1, solution2, data)
+    vm_gap_acr = [abs.(solution1["bus"][i]["vm"] - solution2["bus"][i]["vm"]) for (i, bus) in data["bus"]]
+    return maximum(maximum(vm_gap_acr))
+end
+
+
 data = get_data_math(file_name)
 ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "sb"=>"yes","warm_start_init_point"=>"yes")
 
-## run rosetta PMD ACP and ACR
-# if isinteractive() == false
+## run rosetta PMD ACR
 results_rosetta_acr = RPMD.solve_opf_acr(data, ipopt_solver)
-# # end
-vm_rosetta_acr = results_rosetta_acr["solution"]["vm"]
-va_rosetta_acr = results_rosetta_acr["solution"]["va"]
-sg_rosetta_acr = results_rosetta_acr["solution"]["sg"]
-s_rosetta_acr = results_rosetta_acr["solution"]["s"]
 
-
-# # if isinteractive() == false
-resulta_rosetta_acp = RPMD.solve_opf_acp(data, ipopt_solver)
-# # end
-vm_rosetta_acp = resulta_rosetta_acp["solution"]["vm"]
-va_rosetta_acp = resulta_rosetta_acp["solution"]["va"]
-sg_rosetta_acp = resulta_rosetta_acp["solution"]["sg"]
-s_rosetta_acp = resulta_rosetta_acp["solution"]["s"]
-
-
-## run PMD ACP and ACR
-# results_pmd_acr = PMD.solve_mc_opf(data, PMD.ACRUPowerModel, ipopt_solver; solution_processors=[PMD.sol_data_model!])
 pm_acr = PMD.instantiate_mc_model(data, PMD.ACRUPowerModel, PMD.build_mc_opf)
 for (i, bus) in PMD.ref(pm_acr, 0, :ref_buses)
     vref = bus["vm"] .* exp.(im*bus["va"])
@@ -78,20 +66,17 @@ for (i, bus) in PMD.ref(pm_acr, 0, :ref_buses)
     JuMP.@constraint(pm_acr.model, PMD.var(pm_acr, 0, :vi, i) .== vrefim)
 end
 results_pmd_acr = PMD.optimize_model!(pm_acr, optimizer=ipopt_solver; solution_processors=[PMD.sol_data_model!])
-vm_pmd_acr = [bus["vm"] for (i, bus) in results_pmd_acr["solution"]["bus"]]
-va_pmd_acr = [bus["va"] for (i, bus) in results_pmd_acr["solution"]["bus"]]
-sg_pmd_acr = [gen["pg"]+im*gen["qg"] for (i, gen) in results_pmd_acr["solution"]["gen"]]
-s_pmd_acr = [branch["pf"]+im*branch["qf"] for (i, branch) in results_pmd_acr["solution"]["branch"]]
 
+get_vm_max_error(results_rosetta_acr["solution"], results_pmd_acr["solution"], data)
 
-# results_pmd_acp = PMD.solve_mc_opf(data, PMD.ACPUPowerModel, ipopt_solver; solution_processors=[PMD.sol_data_model!])
+## run rosetta PMD ACP
+results_rosetta_acp = RPMD.solve_opf_acp(data, ipopt_solver)
+
 pm_acp = PMD.instantiate_mc_model(data, PMD.ACPUPowerModel, PMD.build_mc_opf)
 for (i, bus) in PMD.ref(pm_acp, 0, :ref_buses)
     JuMP.@constraint(pm_acp.model, PMD.var(pm_acp, 0, :vm, i) .== bus["vm"])
     # JuMP.@constraint(pm_acp.model, PMD.var(pm_acp, 0, :va, i) .== bus["va"])
 end
 results_pmd_acp = PMD.optimize_model!(pm_acp, optimizer=ipopt_solver; solution_processors=[PMD.sol_data_model!])
-vm_pmd_acp = [bus["vm"] for (i, bus) in results_pmd_acp["solution"]["bus"]]
-va_pmd_acp = [bus["va"] for (i, bus) in results_pmd_acp["solution"]["bus"]]
-sg_pmd_acp = [gen["pg"]+im*gen["qg"] for (i, gen) in results_pmd_acp["solution"]["gen"]]
-s_pmd_acp = [branch["pf"]+im*branch["qf"] for (i, branch) in results_pmd_acp["solution"]["branch"]]
+
+get_vm_max_error(results_rosetta_acp["solution"], results_pmd_acp["solution"], data)

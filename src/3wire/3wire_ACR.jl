@@ -61,7 +61,7 @@ function solve_opf_acr(data, optimizer; verbose=true)
             JuMP.@constraint(model, bus["vmin"].^2 .<= vr[:, i].^2 + vi[:, i].^2  .<= bus["vmax"].^2)
         end
     end
-
+    
     # Branch power flow physics and limit constraints
     for (i,branch) in ref[:branch]
         f_idx = (i, branch["f_bus"], branch["t_bus"])
@@ -125,7 +125,8 @@ function solve_opf_acr(data, optimizer; verbose=true)
             ))
 
         # Voltage angle difference limit
-        # JuMP.@constraint(model, branch["angmin"] .<= va_fr .- va_to .<= branch["angmax"])
+        JuMP.@constraint(model, branch["angmin"] .* (vr_fr .* vr_to + vi_fr .* vi_to) .<= (vi_fr .* vr_to - vr_fr .* vi_to) )
+        JuMP.@constraint(model, (vi_fr .* vr_to - vr_fr .* vi_to) .<= branch["angmax"] .* (vr_fr .* vr_to + vi_fr .* vi_to) )
 
         if haskey(branch, "rate_a") && any(branch["rate_a"] .< Inf)
         # Apparent power limit, from side and to side
@@ -178,10 +179,11 @@ function solve_opf_acr(data, optimizer; verbose=true)
         "time_build" => model_build_time,
         "time_solve" => solve_time,
         "solution" => Dict(
-            "vm" => abs.(JuMP.value.(vr) .+ im.* JuMP.value.(vi)),
-            "va" => angle.(JuMP.value.(vr) .+ im.* JuMP.value.(vi)),
-            "sg" => (JuMP.value.(pg) .+ im.* JuMP.value.(qg)),
-            "s" => (JuMP.value.(p) .+ im.* JuMP.value.(q)),
+            "bus" => Dict(
+                "$i" => Dict( "vm" => [abs.(JuMP.value.(vr[j,i]) .+ im.* JuMP.value.(vi[j,i])) for j in 1:3],
+                              "va" => [angle.(JuMP.value.(vr[j,i]) .+ im.* JuMP.value.(vi[j,i])) for j in 1:3])
+                for (i, bus) in ref[:bus]
+            )
         )
     )
 end

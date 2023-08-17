@@ -201,10 +201,11 @@ function solve_opf_acp(data, optimizer; verbose=true)
         "time_solve" => solve_time,
         "time_callbacks" => total_callback_time,
         "solution" => Dict(
-            "vm" => JuMP.value.(vm),
-            "va" => JuMP.value.(va),
-            "sg" => (JuMP.value.(pg) .+ im.* JuMP.value.(qg)),
-            "s" => (JuMP.value.(p) .+ im.* JuMP.value.(q)),
+            "bus" => Dict(
+                "$i" => Dict( "vm" => [JuMP.value.(vm[j,i]) for j in 1:3],
+                              "va" => [JuMP.value.(va[j,i]) for j in 1:3])
+                for (i, bus) in ref[:bus]
+            )
         )
     )
 end
