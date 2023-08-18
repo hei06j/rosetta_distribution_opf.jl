@@ -57,7 +57,8 @@ for network in readdir(data_dir)
     if !startswith(network, ".")
         for feeder in readdir(data_dir*"/"*network)
             if !startswith(feeder, ".")
-                filename = data_dir*"/"*network*"/"*feeder*"/Master.dss"
+                file_name = data_dir*"/"*network*"/"*feeder*"/Master.dss"
+                @show file_name
                 data = get_data_math(file_name)
 
                 ### ACR

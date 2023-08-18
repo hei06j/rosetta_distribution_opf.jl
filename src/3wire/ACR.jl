@@ -41,6 +41,7 @@ function solve_opf_acr(data, optimizer; verbose=true)
     end
 
     for (i,bus) in ref[:bus]
+        @show i
         bus_loads = [ref[:load][l] for l in ref[:bus_loads][i]]
         bus_shunts = [ref[:shunt][s] for s in ref[:bus_shunts][i]]
 
