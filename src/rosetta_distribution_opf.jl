@@ -1,4 +1,4 @@
-module jump_pmd_ivr
+module rosetta_distribution_opf
 
     import JuMP
     import InfrastructureModels
@@ -22,4 +22,4 @@ module jump_pmd_ivr
     include("./3wire/3wire_ACP.jl")
     include("./3wire/3wire_ACR.jl")
 
-end # module jump_pmd_ivr
+end # module rosetta_distribution_opf

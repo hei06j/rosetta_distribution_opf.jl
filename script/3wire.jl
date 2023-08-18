@@ -8,9 +8,9 @@
 import PowerModelsDistribution
 import Ipopt
 import JuMP
-using jump_pmd_ivr
+using rosetta_distribution_opf
 const PMD = PowerModelsDistribution
-const RPMD = jump_pmd_ivr
+const RPMD = rosetta_distribution_opf
 
 file_name = "./data/case3_unbalanced.dss"
 

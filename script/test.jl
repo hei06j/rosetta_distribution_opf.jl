@@ -1,12 +1,12 @@
 using Pkg
 Pkg.activate("./")
-using jump_pmd_ivr
+using rosetta_distribution_opf
 import PowerModelsDistribution
 import InfrastructureModels
 using Ipopt
 using JuMP
 const _PMD = PowerModelsDistribution
-const _RPMD = jump_pmd_ivr
+const _RPMD = rosetta_distribution_opf
 const _IM = InfrastructureModels
 
 data_path = "./data/test_gen_3ph_wye.dss"

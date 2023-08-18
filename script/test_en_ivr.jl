@@ -1,12 +1,12 @@
 using Pkg
 Pkg.activate("./")
-using jump_pmd_ivr
+using rosetta_distribution_opf
 import PowerModelsDistribution
 import InfrastructureModels
 using Ipopt
 using JuMP
 const _PMD = PowerModelsDistribution
-const _RPMD = jump_pmd_ivr
+const _RPMD = rosetta_distribution_opf
 const _IM = InfrastructureModels
 
 data_path = "./data/test_gen_3ph_wye.dss"
@@ -58,28 +58,28 @@ cig_bus = Dict{Int, Any}()
 # var(pm, nw)[:pg] = Dict{Int, Any}()
 # var(pm, nw)[:qg] = Dict{Int, Any}()
 
-int_dim = Dict(l => RPMD._infer_int_dim_transformer(trans, false) for (l,trans) in ref[:transformer])
-crt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="crt_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "crt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
-cit = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="cit_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "cit_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
-pt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="pt_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "pt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
-qt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="qt_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "qt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
-crt_bus = Dict{Tuple{Int,Int,Int}, Any}()
-cit_bus = Dict{Tuple{Int,Int,Int}, Any}()
+# int_dim = Dict(l => RPMD._infer_int_dim_transformer(trans, false) for (l,trans) in ref[:transformer])
+# crt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="crt_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "crt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
+# cit = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="cit_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "cit_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
+# pt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="pt_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "pt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
+# qt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="qt_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "qt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
+# crt_bus = Dict{Tuple{Int,Int,Int}, Any}()
+# cit_bus = Dict{Tuple{Int,Int,Int}, Any}()
 
-nconds = Dict(l => length(switch["f_connections"]) for (l,switch) in ref[:switch])
-crsw = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="crsw_$((l,i,j))", start = _PMD.comp_start_value(ref[:switch][l], "crsw_start", c, 0.0)) for (l,i,j) in ref[:arcs_switch]) # , lower_bound = -ref[:switch][l]["current_rating"], upper_bound = ref[:switch][l]["current_rating"]
-cisw = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="cisw_$((l,i,j))", start = _PMD.comp_start_value(ref[:switch][l], "cisw_start", c, 0.0)) for (l,i,j) in ref[:arcs_switch]) # , lower_bound = -ref[:switch][l]["current_rating"], upper_bound = ref[:switch][l]["current_rating"]
-crsw_bus = Dict{Tuple{Int,Int,Int}, Any}()
-cisw_bus = Dict{Tuple{Int,Int,Int}, Any}()
+# nconds = Dict(l => length(switch["f_connections"]) for (l,switch) in ref[:switch])
+# crsw = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="crsw_$((l,i,j))", start = _PMD.comp_start_value(ref[:switch][l], "crsw_start", c, 0.0)) for (l,i,j) in ref[:arcs_switch]) # , lower_bound = -ref[:switch][l]["current_rating"], upper_bound = ref[:switch][l]["current_rating"]
+# cisw = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="cisw_$((l,i,j))", start = _PMD.comp_start_value(ref[:switch][l], "cisw_start", c, 0.0)) for (l,i,j) in ref[:arcs_switch]) # , lower_bound = -ref[:switch][l]["current_rating"], upper_bound = ref[:switch][l]["current_rating"]
+# crsw_bus = Dict{Tuple{Int,Int,Int}, Any}()
+# cisw_bus = Dict{Tuple{Int,Int,Int}, Any}()
 
-crd = Dict{Int, Any}()
-cid = Dict{Int, Any}()
-crd_bus = Dict{Int, Any}()
-cid_bus = Dict{Int, Any}()
-# var(pm, nw)[:pd] = Dict{Int, Any}()
-# var(pm, nw)[:qd] = Dict{Int, Any}()
-# var(pm, nw)[:pd_bus] = Dict{Int, Any}()
-# var(pm, nw)[:qd_bus] = Dict{Int, Any}()
+# crd = Dict{Int, Any}()
+# cid = Dict{Int, Any}()
+# crd_bus = Dict{Int, Any}()
+# cid_bus = Dict{Int, Any}()
+# # var(pm, nw)[:pd] = Dict{Int, Any}()
+# # var(pm, nw)[:qd] = Dict{Int, Any}()
+# # var(pm, nw)[:pd_bus] = Dict{Int, Any}()
+# # var(pm, nw)[:qd_bus] = Dict{Int, Any}()
 
 ##
 
@@ -89,17 +89,17 @@ for i in keys(ref[:bus])
     grounded = bus["grounded"]
 
     if i in keys(ref[:ref_buses])
-        if haskey(bus, "va") && !haskey(bus, "vm")
-            #constraint_mc_theta_ref(pm, nw, id, bus["va"], terminals, grounded)
-        elseif haskey(bus, "vm") && !haskey(bus, "va")
-            #constraint_mc_voltage_magnitude_fixed(pm, nw, id, bus["vm"], terminals, grounded)
-        elseif haskey(bus, "vm") && haskey(bus, "va")
+        # if haskey(bus, "va") && !haskey(bus, "vm")
+        #     #constraint_mc_theta_ref(pm, nw, id, bus["va"], terminals, grounded)
+        # elseif haskey(bus, "vm") && !haskey(bus, "va")
+        #     #constraint_mc_voltage_magnitude_fixed(pm, nw, id, bus["vm"], terminals, grounded)
+        # elseif haskey(bus, "vm") && haskey(bus, "va")
             idxs = findall((!).(grounded))
             JuMP.@constraint(model, [k in idxs], vr[i][terminals[k]] == bus["vm"][i]*cos(bus["va"][k]))
             JuMP.@constraint(model, [k in idxs], vi[i][terminals[k]] == bus["vm"][i]*sin(bus["va"][k]))
-        end
+        # end
     end
-
+    
     ungrounded_terminals = terminals[(!).(grounded)]
     for (idx,t) in enumerate(terminals)
         if !grounded[idx]
@@ -127,12 +127,10 @@ for i in keys(ref[:bus])
 end
 
 
-for id in keys(ref[:gen])
+for (id, generator) in ref[:gen]
     # constraint_mc_generator_current(pm, id)
-
-    generator = ref[:gen][id]
     nphases = _RPMD._infer_int_dim_unit(generator, false)
-    bus_id = bus["index"]
+    bus_id = generator["gen_bus"]
     bus = ref[:bus][bus_id]
     configuration = generator["configuration"]
     connections = generator["connections"]
@@ -150,11 +148,11 @@ for id in keys(ref[:gen])
         crg_bus[id] = _RPMD._merge_bus_flows(model, [crg[id]..., -sum(crg[id])], connections)
         cig_bus[id] = _RPMD._merge_bus_flows(model, [cig[id]..., -sum(cig[id])], connections)
 
-        pg = Vector{JuMP.NonlinearExpression}([])
-        qg = Vector{JuMP.NonlinearExpression}([])
+        pg_expr = Vector{JuMP.NonlinearExpression}([])
+        qg_expr = Vector{JuMP.NonlinearExpression}([])
         for (idx, p) in enumerate(phases)
-            push!(pg, JuMP.@NLexpression(model,  (vr[bus_id][p]-vr[bus_id][n])*crg[id][idx]+(vi[bus_id][p]-vi[bus_id][n])*cig[id][idx]))
-            push!(qg, JuMP.@NLexpression(model, -(vr[bus_id][p]-vr[bus_id][n])*cig[id][idx]+(vi[bus_id][p]-vi[bus_id][n])*crg[id][idx]))
+            push!(pg_expr, JuMP.@NLexpression(model,  (vr[bus_id][p]-vr[bus_id][n])*crg[id][idx]+(vi[bus_id][p]-vi[bus_id][n])*cig[id][idx]))
+            push!(qg_expr, JuMP.@NLexpression(model, -(vr[bus_id][p]-vr[bus_id][n])*cig[id][idx]+(vi[bus_id][p]-vi[bus_id][n])*crg[id][idx]))
         end
         for (idx, p) in enumerate(phases)
             if pmin[idx]>-Inf
@@ -188,23 +186,22 @@ for id in keys(ref[:gen])
             vrg[idx] = JuMP.@NLexpression(model, vr[bus_id][c]-vr[bus_id][d])
             vig[idx] = JuMP.@NLexpression(model, vi[bus_id][c]-vi[bus_id][d])
         end
-        pg = Vector{JuMP.NonlinearExpression}([])
-        qg = Vector{JuMP.NonlinearExpression}([])
+        pg_expr = Vector{JuMP.NonlinearExpression}([])
+        qg_expr = Vector{JuMP.NonlinearExpression}([])
         for idx in 1:nph
-            push!(pg, JuMP.@NLexpression(model,  vrg[idx]*crg[id][idx]+vig[idx]*cig[id][idx]))
-            push!(qg, JuMP.@NLexpression(model, -vrg[idx]*cig[id][idx]+vig[idx]*crg[id][idx]))
+            push!(pg_expr, JuMP.@NLexpression(model,  vrg[idx]*crg[id][idx]+vig[idx]*cig[id][idx]))
+            push!(qg_expr, JuMP.@NLexpression(model, -vrg[idx]*cig[id][idx]+vig[idx]*crg[id][idx]))
         end
-        JuMP.@NLconstraint(model, [i in 1:nph], pmin[i] <= pg[i])
-        JuMP.@NLconstraint(model, [i in 1:nph], pmax[i] >= pg[i])
-        JuMP.@NLconstraint(model, [i in 1:nph], qmin[i] <= qg[i])
-        JuMP.@NLconstraint(model, [i in 1:nph], qmax[i] >= qg[i])
+        JuMP.@NLconstraint(model, [i in 1:nph], pmin[i] <= pg_expr[i])
+        JuMP.@NLconstraint(model, [i in 1:nph], pmax[i] >= pg_expr[i])
+        JuMP.@NLconstraint(model, [i in 1:nph], qmin[i] <= qg_expr[i])
+        JuMP.@NLconstraint(model, [i in 1:nph], qmax[i] >= qg_expr[i])
 
     end
 end
 
 
-for id in keys(ref[:load])
-    load = ref[:load][id]
+for (id, load) in ref[:load]
     bus_id = load["load_bus"]
     bus = ref[:bus][bus_id]
     configuration = load["configuration"]
@@ -259,125 +256,125 @@ for id in keys(ref[:load])
 end
 
 
-for (i, transformer) in ref[:transformer]
-    f_bus = transformer["f_bus"]
-    t_bus = transformer["t_bus"]
-    f_idx = (i, f_bus, t_bus)
-    t_idx = (i, t_bus, f_bus)
-    configuration = transformer["configuration"]
-    f_connections = transformer["f_connections"]
-    t_connections = transformer["t_connections"]
-    tm_set = transformer["tm_set"]
-    tm_fixed = fix_taps ? ones(Bool, length(tm_set)) : transformer["tm_fix"]
-    tm_scale = _PMD.calculate_tm_scale(transformer, ref[:bus][f_bus], ref[:bus][t_bus])
-    pol = transformer["polarity"]
-    sm_ub = transformer["sm_ub"]
+# for (i, transformer) in ref[:transformer]
+#     f_bus = transformer["f_bus"]
+#     t_bus = transformer["t_bus"]
+#     f_idx = (i, f_bus, t_bus)
+#     t_idx = (i, t_bus, f_bus)
+#     configuration = transformer["configuration"]
+#     f_connections = transformer["f_connections"]
+#     t_connections = transformer["t_connections"]
+#     tm_set = transformer["tm_set"]
+#     tm_fixed = fix_taps ? ones(Bool, length(tm_set)) : transformer["tm_fix"]
+#     tm_scale = _PMD.calculate_tm_scale(transformer, ref[:bus][f_bus], ref[:bus][t_bus])
+#     pol = transformer["polarity"]
+#     sm_ub = transformer["sm_ub"]
 
 
-    vr_fr = vr[f_bus]
-    vi_fr = vi[f_bus]
-    vr_to = vr[t_bus]
-    vi_to = vi[t_bus]
+#     vr_fr = vr[f_bus]
+#     vi_fr = vi[f_bus]
+#     vr_to = vr[t_bus]
+#     vi_to = vi[t_bus]
 
-    crt_fr = crt[f_idx]
-    cit_fr = cit[f_idx]
-    crt_to = crt[t_idx]
-    cit_to = cit[t_idx]
+#     crt_fr = crt[f_idx]
+#     cit_fr = cit[f_idx]
+#     crt_to = crt[t_idx]
+#     cit_to = cit[t_idx]
 
-    if configuration == _PMD.WYE  || length(crt_fr)==1
-        ### constraint_mc_transformer_voltage_yy
-        vr_fr_P = [vr_fr[c] for c in f_connections[1:end-1]]
-        vi_fr_P = [vi_fr[c] for c in f_connections[1:end-1]]
-        vr_fr_n = vr_fr[f_connections[end]]
-        vi_fr_n = vi_fr[f_connections[end]]
-        vr_to_P = [vr_to[c] for c in t_connections[1:end-1]]
-        vi_to_P = [vi_to[c] for c in t_connections[1:end-1]]
-        vr_to_n = vr_to[t_connections[end]]
-        vi_to_n = vi_to[t_connections[end]]
-        # construct tm as a parameter or scaled variable depending on whether it is fixed or not
-        tm = [tm_fixed[idx] ? tm_set[idx] : var(pm, nw, :tap, trans_id)[idx] for idx in 1:length(tm_fixed)]
-        scale = (tm_scale*pol).*tm_set
-        JuMP.@constraint(model, (vr_fr_P.-vr_fr_n) .== scale.*(vr_to_P.-vr_to_n))
-        JuMP.@constraint(model, (vi_fr_P.-vi_fr_n) .== scale.*(vi_to_P.-vi_to_n))
+#     if configuration == _PMD.WYE  || length(crt_fr)==1
+#         ### constraint_mc_transformer_voltage_yy
+#         vr_fr_P = [vr_fr[c] for c in f_connections[1:end-1]]
+#         vi_fr_P = [vi_fr[c] for c in f_connections[1:end-1]]
+#         vr_fr_n = vr_fr[f_connections[end]]
+#         vi_fr_n = vi_fr[f_connections[end]]
+#         vr_to_P = [vr_to[c] for c in t_connections[1:end-1]]
+#         vi_to_P = [vi_to[c] for c in t_connections[1:end-1]]
+#         vr_to_n = vr_to[t_connections[end]]
+#         vi_to_n = vi_to[t_connections[end]]
+#         # construct tm as a parameter or scaled variable depending on whether it is fixed or not
+#         tm = [tm_fixed[idx] ? tm_set[idx] : var(pm, nw, :tap, trans_id)[idx] for idx in 1:length(tm_fixed)]
+#         scale = (tm_scale*pol).*tm_set
+#         JuMP.@constraint(model, (vr_fr_P.-vr_fr_n) .== scale.*(vr_to_P.-vr_to_n))
+#         JuMP.@constraint(model, (vi_fr_P.-vi_fr_n) .== scale.*(vi_to_P.-vi_to_n))
 
-        ### constraint_mc_transformer_current_yy
-        # construct tm as a parameter or scaled variable depending on whether it is fixed or not
-        tm = [tm_fixed[idx] ? tm_set[idx] : var(pm, nw, :tap, trans_id)[idx] for idx in 1:length(tm_fixed)]
-        scale = (tm_scale*pol).*tm_set
+#         ### constraint_mc_transformer_current_yy
+#         # construct tm as a parameter or scaled variable depending on whether it is fixed or not
+#         tm = [tm_fixed[idx] ? tm_set[idx] : var(pm, nw, :tap, trans_id)[idx] for idx in 1:length(tm_fixed)]
+#         scale = (tm_scale*pol).*tm_set
 
-        JuMP.@constraint(model, scale.*crt_fr .+ crt_to .== 0)
-        JuMP.@constraint(model, scale.*cit_fr .+ cit_to .== 0)
-        crt_bus[f_idx] = _RPMD._merge_bus_flows(model, [crt_fr..., -sum(crt_fr)], f_connections)
-        cit_bus[f_idx] = _RPMD._merge_bus_flows(model, [cit_fr..., -sum(cit_fr)], f_connections)
-        crt_bus[t_idx] = _RPMD._merge_bus_flows(model, [crt_to..., -sum(crt_to)], t_connections)
-        cit_bus[t_idx] = _RPMD._merge_bus_flows(model, [cit_to..., -sum(cit_to)], t_connections)
+#         JuMP.@constraint(model, scale.*crt_fr .+ crt_to .== 0)
+#         JuMP.@constraint(model, scale.*cit_fr .+ cit_to .== 0)
+#         crt_bus[f_idx] = _RPMD._merge_bus_flows(model, [crt_fr..., -sum(crt_fr)], f_connections)
+#         cit_bus[f_idx] = _RPMD._merge_bus_flows(model, [cit_fr..., -sum(cit_fr)], f_connections)
+#         crt_bus[t_idx] = _RPMD._merge_bus_flows(model, [crt_to..., -sum(crt_to)], t_connections)
+#         cit_bus[t_idx] = _RPMD._merge_bus_flows(model, [cit_to..., -sum(cit_to)], t_connections)
 
-    elseif configuration == _PMD.DELTA
-        ### constraint_mc_transformer_voltage_dy
-        vr_fr_P = [vr_fr[c] for c in f_connections]
-        vi_fr_P = [vi_fr[c] for c in f_connections]
-        vr_to_P = [vr_to[c] for c in t_connections[1:end-1]]
-        vi_to_P = [vi_to[c] for c in t_connections[1:end-1]]
-        vr_to_n = vr_to[t_connections[end]]
-        vi_to_n = vi_to[t_connections[end]]
-        # construct tm as a parameter or scaled variable depending on whether it is fixed or not
-        tm = [tm_fixed[idx] ? tm_set[idx] : var(pm, nw, :tap, trans_id)[idx] for idx in 1:length(tm_fixed)]
-        scale = (tm_scale*pol).*tm_set
-        n_phases = length(tm)
-        Md = _PMD._get_delta_transformation_matrix(n_phases)
-        JuMP.@constraint(model, Md*vr_fr_P .== scale.*(vr_to_P .- vr_to_n))
-        JuMP.@constraint(model, Md*vi_fr_P .== scale.*(vi_to_P .- vi_to_n))
+#     elseif configuration == _PMD.DELTA
+#         ### constraint_mc_transformer_voltage_dy
+#         vr_fr_P = [vr_fr[c] for c in f_connections]
+#         vi_fr_P = [vi_fr[c] for c in f_connections]
+#         vr_to_P = [vr_to[c] for c in t_connections[1:end-1]]
+#         vi_to_P = [vi_to[c] for c in t_connections[1:end-1]]
+#         vr_to_n = vr_to[t_connections[end]]
+#         vi_to_n = vi_to[t_connections[end]]
+#         # construct tm as a parameter or scaled variable depending on whether it is fixed or not
+#         tm = [tm_fixed[idx] ? tm_set[idx] : var(pm, nw, :tap, trans_id)[idx] for idx in 1:length(tm_fixed)]
+#         scale = (tm_scale*pol).*tm_set
+#         n_phases = length(tm)
+#         Md = _PMD._get_delta_transformation_matrix(n_phases)
+#         JuMP.@constraint(model, Md*vr_fr_P .== scale.*(vr_to_P .- vr_to_n))
+#         JuMP.@constraint(model, Md*vi_fr_P .== scale.*(vi_to_P .- vi_to_n))
 
-        ### constraint_mc_transformer_current_dy
-        # construct tm as a parameter or scaled variable depending on whether it is fixed or not
-        tm = [tm_fixed[idx] ? tm_set[idx] : var(pm, nw, :tap, trans_id)[idx] for idx in 1:length(tm_fixed)]
-        scale = (tm_scale*pol).*tm_set
-        n_phases = length(tm)
-        Md = _PMD._get_delta_transformation_matrix(n_phases)
-        JuMP.@constraint(model, scale.*crt_fr .+ crt_to .== 0)
-        JuMP.@constraint(model, scale.*cit_fr .+ cit_to .== 0)
-        _RPMD._merge_bus_flows(model, Md'*crt_fr, f_connections)
-        _RPMD._merge_bus_flows(model, Md'*cit_fr, f_connections)
-        _RPMD._merge_bus_flows(model, [crt_to..., -sum(crt_to)], t_connections)
-        _RPMD._merge_bus_flows(model, [cit_to..., -sum(cit_to)], t_connections)
+#         ### constraint_mc_transformer_current_dy
+#         # construct tm as a parameter or scaled variable depending on whether it is fixed or not
+#         tm = [tm_fixed[idx] ? tm_set[idx] : var(pm, nw, :tap, trans_id)[idx] for idx in 1:length(tm_fixed)]
+#         scale = (tm_scale*pol).*tm_set
+#         n_phases = length(tm)
+#         Md = _PMD._get_delta_transformation_matrix(n_phases)
+#         JuMP.@constraint(model, scale.*crt_fr .+ crt_to .== 0)
+#         JuMP.@constraint(model, scale.*cit_fr .+ cit_to .== 0)
+#         _RPMD._merge_bus_flows(model, Md'*crt_fr, f_connections)
+#         _RPMD._merge_bus_flows(model, Md'*cit_fr, f_connections)
+#         _RPMD._merge_bus_flows(model, [crt_to..., -sum(crt_to)], t_connections)
+#         _RPMD._merge_bus_flows(model, [cit_to..., -sum(cit_to)], t_connections)
 
-    elseif configuration == "zig-zag"
-        error("Zig-zag not yet supported.")
-    end
+#     elseif configuration == "zig-zag"
+#         error("Zig-zag not yet supported.")
+#     end
 
-    ### constraint_mc_transformer_thermal_limit
-    if configuration==_PMD.WYE || length(crt_fr)==1
-        P_fr = f_connections[1:end-1]
-        n_fr = f_connections[end]
-        vrt_fr = [vr_fr[p]-vr_fr[n_fr] for p in P_fr]
-        vit_fr = [vi_fr[p]-vi_fr[n_fr] for p in P_fr]
-    elseif configuration==_PMD.DELTA && length(crt_fr)==3
-        M = _get_delta_transformation_matrix(3)
-        vrt_fr = M*[vr_to[p] for p in f_connections]
-        vit_fr = M*[vi_to[p] for p in f_connections]
-    else
-        error("The configuration $config of dimension $(length(crt)) is not supported.")
-    end
-    P_to = t_connections[1:end-1]
-    n_to = t_connections[end]
-    vrt_to = [vr_to[p]-vr_to[n_to] for p in P_to]
-    vit_to = [vi_to[p]-vi_to[n_to] for p in P_to]
+#     ### constraint_mc_transformer_thermal_limit
+#     if configuration==_PMD.WYE || length(crt_fr)==1
+#         P_fr = f_connections[1:end-1]
+#         n_fr = f_connections[end]
+#         vrt_fr = [vr_fr[p]-vr_fr[n_fr] for p in P_fr]
+#         vit_fr = [vi_fr[p]-vi_fr[n_fr] for p in P_fr]
+#     elseif configuration==_PMD.DELTA && length(crt_fr)==3
+#         M = _get_delta_transformation_matrix(3)
+#         vrt_fr = M*[vr_to[p] for p in f_connections]
+#         vit_fr = M*[vi_to[p] for p in f_connections]
+#     else
+#         error("The configuration $config of dimension $(length(crt)) is not supported.")
+#     end
+#     P_to = t_connections[1:end-1]
+#     n_to = t_connections[end]
+#     vrt_to = [vr_to[p]-vr_to[n_to] for p in P_to]
+#     vit_to = [vi_to[p]-vi_to[n_to] for p in P_to]
 
-    idxs = [1:length(vrt_fr)...]
-    pt_fr = JuMP.@NLexpression(model, [i in idxs],  vrt_fr[i]*crt_fr[i] + vit_fr[i]*cit_fr[i])
-    qt_fr = JuMP.@NLexpression(model, [i in idxs], -vrt_fr[i]*cit_fr[i] + vit_fr[i]*crt_fr[i])
-    pt_to = JuMP.@NLexpression(model, [i in idxs],  vrt_to[i]*crt_to[i] + vit_to[i]*cit_to[i])
-    qt_to = JuMP.@NLexpression(model, [i in idxs], -vrt_to[i]*cit_to[i] + vit_to[i]*crt_to[i])
+#     idxs = [1:length(vrt_fr)...]
+#     pt_fr = JuMP.@NLexpression(model, [i in idxs],  vrt_fr[i]*crt_fr[i] + vit_fr[i]*cit_fr[i])
+#     qt_fr = JuMP.@NLexpression(model, [i in idxs], -vrt_fr[i]*cit_fr[i] + vit_fr[i]*crt_fr[i])
+#     pt_to = JuMP.@NLexpression(model, [i in idxs],  vrt_to[i]*crt_to[i] + vit_to[i]*cit_to[i])
+#     qt_to = JuMP.@NLexpression(model, [i in idxs], -vrt_to[i]*cit_to[i] + vit_to[i]*crt_to[i])
 
-    if sm_ub<Inf
-        JuMP.@NLconstraint(model, sum(pt_fr[i] for i in idxs)^2 + sum(qt_fr[i] for i in idxs)^2 <= sm_ub^2)
-        JuMP.@NLconstraint(model, sum(pt_to[i] for i in idxs)^2 + sum(qt_to[i] for i in idxs)^2 <= sm_ub^2)
-    end
+#     if sm_ub<Inf
+#         JuMP.@NLconstraint(model, sum(pt_fr[i] for i in idxs)^2 + sum(qt_fr[i] for i in idxs)^2 <= sm_ub^2)
+#         JuMP.@NLconstraint(model, sum(pt_to[i] for i in idxs)^2 + sum(qt_to[i] for i in idxs)^2 <= sm_ub^2)
+#     end
 
     
 
 
-end
+# end
 
 
 for (i, branch) in ref[:branch]
@@ -464,9 +461,6 @@ for (i, bus) in ref[:bus]
     terminals = bus["terminals"]
     grounded = bus["grounded"]
 
-    # vr = vr[i]
-    # vi = vi[i]
-
     cr    = cr_bus #get(cr_bus,   Dict()); _RPMD._check_var_keys(cr, bus_arcs, "real current", "branch")
     ci    = ci_bus #get(ci_bus,   Dict()); _RPMD._check_var_keys(ci, bus_arcs, "imaginary current", "branch")
     crd   = crd_bus #get(crd_bus,  Dict()); _RPMD._check_var_keys(crd, bus_loads, "real current", "load")
@@ -512,20 +506,14 @@ for (i, bus) in ref[:bus]
 end
 
 
-"""
-    objective_mc_min_fuel_cost_polynomial(pm::AbstractUnbalancedPowerModel)
+JuMP.@objective(model, Min, sum(gen["cost"][1]*sum(pg[i]) + gen["cost"][2] for (i,gen) in ref[:gen]))
 
-Fuel cost minimization objective for polynomial terms
-"""
-# function objective_mc_min_fuel_cost_polynomial(pm::AbstractUnbalancedPowerModel; report::Bool=true)
-    order = _PMD.calc_max_cost_index(pm.data)-1
 
-    if order <= 2
-        return _objective_mc_min_fuel_cost_polynomial_linquad(pm; report=report)
-    else
-        return _objective_mc_min_fuel_cost_polynomial_nl(pm; report=report)
-    end
-# end
+##
+JuMP.optimize!(model)
+cost = JuMP.objective_value(model)
+feasible = (JuMP.termination_status(model) == JuMP.LOCALLY_SOLVED)
+
 
 
 ##

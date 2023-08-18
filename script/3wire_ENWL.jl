@@ -7,9 +7,9 @@
 import PowerModelsDistribution
 import Ipopt
 import JuMP
-using jump_pmd_ivr
+using rosetta_distribution_opf
 const PMD = PowerModelsDistribution
-const RPMD = jump_pmd_ivr
+const RPMD = rosetta_distribution_opf
 
 ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "sb"=>"yes","warm_start_init_point"=>"yes")
 
