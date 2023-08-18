@@ -19,7 +19,7 @@ module rosetta_distribution_opf
     include("./4wire_IVR/objective.jl")
     include("./4wire_IVR/ivr.jl")
 
-    include("./3wire/3wire_ACP.jl")
-    include("./3wire/3wire_ACR.jl")
+    include("./3wire/ACP.jl")
+    include("./3wire/ACR.jl")
 
 end # module rosetta_distribution_opf
