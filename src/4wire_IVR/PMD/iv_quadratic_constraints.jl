@@ -120,7 +120,7 @@
 
 #     phases = connections
 
-#     Md = _get_delta_transformation_matrix(length(connections))
+#     Md = _PMD._get_delta_transformation_matrix(length(connections))
 #     vrd = Md*[vr[p] for p in phases]
 #     vid = Md*[vi[p] for p in phases]
 
@@ -218,7 +218,7 @@
 # function constraint_mc_load_current_delta(pm::_PMD.AbstractQuadraticExplicitNeutralIVRModel, nw::Int, id::Int, connections::Vector{Int}; report::Bool=true, bounded::Bool=true)
 #     crd = var(pm, nw, :crd, id)
 #     cid = var(pm, nw, :cid, id)
-#     Md = _get_delta_transformation_matrix(length(connections))
+#     Md = _PMD._get_delta_transformation_matrix(length(connections))
 #     var(pm, nw, :crd_bus)[id] = _PMD._merge_bus_flows(pm, Md'*crd, connections)
 #     var(pm, nw, :cid_bus)[id] = _PMD._merge_bus_flows(pm, Md'*cid, connections)
 # end
@@ -349,7 +349,7 @@
 #         vrt_fr = [vr_fr[p]-vr_fr[n_fr] for p in P_fr]
 #         vit_fr = [vi_fr[p]-vi_fr[n_fr] for p in P_fr]
 #     elseif config==_PMD.DELTA && length(crt_fr)==3
-#         M = _get_delta_transformation_matrix(3)
+#         M = _PMD._get_delta_transformation_matrix(3)
 #         vrt_fr = M*[vr_to[p] for p in f_connections]
 #         vit_fr = M*[vi_to[p] for p in f_connections]
 #     else

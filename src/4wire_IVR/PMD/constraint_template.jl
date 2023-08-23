@@ -143,7 +143,7 @@ function constraint_mc_transformer_voltage(pm::_PMD.ExplicitNeutralModels, i::In
     t_connections = transformer["t_connections"]
     tm_set = transformer["tm_set"]
     tm_fixed = fix_taps ? ones(Bool, length(tm_set)) : transformer["tm_fix"]
-    tm_scale = calculate_tm_scale(transformer, _PMD.ref(pm, nw, :bus, f_bus), _PMD.ref(pm, nw, :bus, t_bus))
+    tm_scale = _PMD.calculate_tm_scale(transformer, _PMD.ref(pm, nw, :bus, f_bus), _PMD.ref(pm, nw, :bus, t_bus))
 
     #TODO change data model
     # there is redundancy in specifying polarity seperately on from and to side
@@ -187,7 +187,7 @@ function constraint_mc_transformer_current(pm::_PMD.AbstractExplicitNeutralIVRMo
     t_connections = transformer["t_connections"]
     tm_set = transformer["tm_set"]
     tm_fixed = fix_taps ? ones(Bool, length(tm_set)) : transformer["tm_fix"]
-    tm_scale = calculate_tm_scale(transformer, _PMD.ref(pm, nw, :bus, f_bus), _PMD.ref(pm, nw, :bus, t_bus))
+    tm_scale = _PMD.calculate_tm_scale(transformer, _PMD.ref(pm, nw, :bus, f_bus), _PMD.ref(pm, nw, :bus, t_bus))
 
     #TODO change data model
     # there is redundancy in specifying polarity seperately on from and to side
@@ -330,9 +330,11 @@ function constraint_mc_load_power(pm::_PMD.ExplicitNeutralModels, id::Int; nw::I
     a, alpha, b, beta = _PMD._load_expmodel_params(load, bus)
 
     if configuration==_PMD.WYE || length(a)==1
-        constraint_mc_load_power_wye(pm, nw, id, load["load_bus"], load["connections"], a, alpha, b, beta; report=report)
+        # constraint_mc_load_power_wye(pm, nw, id, load["load_bus"], load["connections"], a, alpha, b, beta; report=report)
+        constraint_mc_load_power_wye(pm, nw, id, load["load_bus"], load["connections"], load["model"], a, b; report=report)
     else
-        constraint_mc_load_power_delta(pm, nw, id, load["load_bus"], load["connections"], a, alpha, b, beta; report=report)
+        # constraint_mc_load_power_delta(pm, nw, id, load["load_bus"], load["connections"], a, alpha, b, beta; report=report)
+        constraint_mc_load_power_delta(pm, nw, id, load["load_bus"], load["connections"], load["model"], a, b; report=report)
     end
 end
 

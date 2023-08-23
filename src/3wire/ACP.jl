@@ -40,6 +40,22 @@ function solve_opf_acp(data, optimizer; verbose=true)
         bus_loads = [ref[:load][l] for l in ref[:bus_loads][i]]
         bus_shunts = [ref[:shunt][s] for s in ref[:bus_shunts][i]]
 
+        # for load in bus_loads
+        #     pd = qd = zeros(3)
+        #     pd[load["connections"]] .+= load["pd"]
+        #     qd[load["connections"]] .+= load["qd"]
+        #     load["pd"] = pd
+        #     load["qd"] = qd
+        # end
+
+        # for shunt in bus_shunts
+        #     gs = bs = zeros(3)
+        #     gs[shunt["connections"]] .+= shunt["gs"]
+        #     bs[load["connections"]] .+= shunt["bs"]
+        #     shunt["gs"] = gs
+        #     load["bs"] = bs
+        # end
+
         JuMP.@constraint(model,
             sum(p[:,a] for a in ref[:bus_arcs_branch][i]) .==
             sum([pg[:,g] for g in ref[:bus_gens][i]], init=[0;0;0]) .-

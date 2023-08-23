@@ -310,7 +310,7 @@ creates expressions for the terminal current flows `:crg_bus` and `:cig_bus` of 
 function constraint_mc_generator_current_delta(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, id::Int, connections::Vector{Int}; report::Bool=true, bounded::Bool=true)
     crg = var(pm, nw, :crg, id)
     cig = var(pm, nw, :cig, id)
-    Md = _get_delta_transformation_matrix(length(connections))
+    Md = _PMD._get_delta_transformation_matrix(length(connections))
     var(pm, nw, :crg_bus)[id] = _PMD._merge_bus_flows(pm, Md'*crg, connections)
     var(pm, nw, :cig_bus)[id] = _PMD._merge_bus_flows(pm, Md'*cig, connections)
 end
@@ -402,7 +402,7 @@ function constraint_mc_transformer_voltage_dy(pm::_PMD.RectangularVoltageExplici
     scale = (tm_scale*pol).*tm_set
 
     n_phases = length(tm)
-    Md = _get_delta_transformation_matrix(n_phases)
+    Md = _PMD._get_delta_transformation_matrix(n_phases)
 
     JuMP.@constraint(pm.model, Md*vr_fr_P .== scale.*(vr_to_P .- vr_to_n))
     JuMP.@constraint(pm.model, Md*vi_fr_P .== scale.*(vi_to_P .- vi_to_n))
@@ -494,7 +494,7 @@ function constraint_mc_transformer_current_dy(pm::_PMD.AbstractExplicitNeutralIV
     scale = (tm_scale*pol).*tm_set
 
     n_phases = length(tm)
-    Md = _get_delta_transformation_matrix(n_phases)
+    Md = _PMD._get_delta_transformation_matrix(n_phases)
 
     JuMP.@constraint(pm.model, scale.*cr_fr_P .+ cr_to_P .== 0)
     JuMP.@constraint(pm.model, scale.*ci_fr_P .+ ci_to_P .== 0)
@@ -548,7 +548,7 @@ function constraint_mc_transformer_thermal_limit(pm::_PMD.AbstractNLExplicitNeut
         vrt_fr = [vr_fr[p]-vr_fr[n_fr] for p in P_fr]
         vit_fr = [vi_fr[p]-vi_fr[n_fr] for p in P_fr]
     elseif config==_PMD.DELTA && length(crt_fr)==3
-        M = _get_delta_transformation_matrix(3)
+        M = _PMD._get_delta_transformation_matrix(3)
         vrt_fr = M*[vr_to[p] for p in f_connections]
         vit_fr = M*[vi_to[p] for p in f_connections]
     else
@@ -770,7 +770,7 @@ function constraint_mc_load_power_delta(pm::_PMD.AbstractQuadraticExplicitNeutra
 
     phases = connections
 
-    Md = _get_delta_transformation_matrix(length(connections))
+    Md = _PMD._get_delta_transformation_matrix(length(connections))
     vrd = Md*[vr[p] for p in phases]
     vid = Md*[vi[p] for p in phases]
 

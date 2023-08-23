@@ -482,7 +482,7 @@ function variable_mc_transformer_current_imaginary(pm::_PMD.ExplicitNeutralModel
     int_dim = Dict(l => _infer_int_dim_transformer(trans, false) for (l,trans) in _PMD.ref(pm, nw, :transformer))
     cit = var(pm, nw)[:cit] = Dict((l,i,j) => JuMP.@variable(pm.model,
             [c in 1:int_dim[l]], base_name="$(nw)_cit_$((l,i,j))",
-            start = comp_start_value(_PMD.ref(pm, nw, :transformer, l), "cit_start", c, 0.0)
+            start = _PMD.comp_start_value(_PMD.ref(pm, nw, :transformer, l), "cit_start", c, 0.0)
         ) for (l,i,j) in _PMD.ref(pm, nw, :arcs_transformer)
     )
 

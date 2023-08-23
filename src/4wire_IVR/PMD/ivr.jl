@@ -70,5 +70,5 @@ function build_mc_opf(pm::_PMD.AbstractExplicitNeutralIVRModel)
     end
 
     # Objective
-    objective_mc_min_fuel_cost(pm)
+    objective_mc_min_fuel_cost_polynomial_linquad(pm)
 end

@@ -62,33 +62,35 @@ for network in readdir(data_dir)
                 data = get_data_math(file_name)
 
                 ### ACR
-                results_rosetta_acr = RPMD.solve_opf_acr(data, ipopt_solver; verbose=false);
+                # results_rosetta_acr = RPMD.solve_opf_acr(data, ipopt_solver; verbose=false);
+                # @show file_name, "ACR"
+                
+                # pm_acr = PMD.instantiate_mc_model(data, PMD.ACRUPowerModel, PMD.build_mc_opf)
+                # for (i, bus) in PMD.ref(pm_acr, 0, :ref_buses)
+                #     vref = bus["vm"] .* exp.(im*bus["va"])
+                #     vrefre = real.(vref)
+                #     vrefim = imag.(vref)
+                #     JuMP.@constraint(pm_acr.model, PMD.var(pm_acr, 0, :vr, i) .== vrefre)
+                #     JuMP.@constraint(pm_acr.model, PMD.var(pm_acr, 0, :vi, i) .== vrefim)
+                # end
+                # results_pmd_acr = PMD.optimize_model!(pm_acr, optimizer=ipopt_solver; solution_processors=[PMD.sol_data_model!])
 
-                pm_acr = PMD.instantiate_mc_model(data, PMD.ACRUPowerModel, PMD.build_mc_opf)
-                for (i, bus) in PMD.ref(pm_acr, 0, :ref_buses)
-                    vref = bus["vm"] .* exp.(im*bus["va"])
-                    vrefre = real.(vref)
-                    vrefim = imag.(vref)
-                    JuMP.@constraint(pm_acr.model, PMD.var(pm_acr, 0, :vr, i) .== vrefre)
-                    JuMP.@constraint(pm_acr.model, PMD.var(pm_acr, 0, :vi, i) .== vrefim)
-                end
-                results_pmd_acr = PMD.optimize_model!(pm_acr, optimizer=ipopt_solver; solution_processors=[PMD.sol_data_model!])
-
-                append!(acr_error, get_vm_max_error(results_rosetta_acr["solution"], results_pmd_acr["solution"], data))
+                # append!(acr_error, get_vm_max_error(results_rosetta_acr["solution"], results_pmd_acr["solution"], data))
 
 
 
                 ### ACP
                 results_rosetta_acp = RPMD.solve_opf_acp(data, ipopt_solver; verbose=false);
+                @show file_name, "ACPPPP"
 
-                pm_acp = PMD.instantiate_mc_model(data, PMD.ACPUPowerModel, PMD.build_mc_opf)
-                for (i, bus) in PMD.ref(pm_acp, 0, :ref_buses)
-                    JuMP.@constraint(pm_acp.model, PMD.var(pm_acp, 0, :vm, i) .== bus["vm"])
-                    # JuMP.@constraint(pm_acp.model, PMD.var(pm_acp, 0, :va, i) .== bus["va"])
-                end
-                results_pmd_acp = PMD.optimize_model!(pm_acp, optimizer=ipopt_solver; solution_processors=[PMD.sol_data_model!])
+                # pm_acp = PMD.instantiate_mc_model(data, PMD.ACPUPowerModel, PMD.build_mc_opf)
+                # for (i, bus) in PMD.ref(pm_acp, 0, :ref_buses)
+                #     JuMP.@constraint(pm_acp.model, PMD.var(pm_acp, 0, :vm, i) .== bus["vm"])
+                #     # JuMP.@constraint(pm_acp.model, PMD.var(pm_acp, 0, :va, i) .== bus["va"])
+                # end
+                # results_pmd_acp = PMD.optimize_model!(pm_acp, optimizer=ipopt_solver; solution_processors=[PMD.sol_data_model!])
 
-                append!(acp_error, get_vm_max_error(results_rosetta_acp["solution"], results_pmd_acp["solution"], data))
+                # append!(acp_error, get_vm_max_error(results_rosetta_acp["solution"], results_pmd_acp["solution"], data))
                 
             end
         end

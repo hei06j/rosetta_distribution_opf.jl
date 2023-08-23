@@ -41,9 +41,24 @@ function solve_opf_acr(data, optimizer; verbose=true)
     end
 
     for (i,bus) in ref[:bus]
-        @show i
         bus_loads = [ref[:load][l] for l in ref[:bus_loads][i]]
         bus_shunts = [ref[:shunt][s] for s in ref[:bus_shunts][i]]
+        
+        # for load in bus_loads
+        #     pd = qd = zeros(3)
+        #     pd[load["connections"]] .+= load["pd"]
+        #     qd[load["connections"]] .+= load["qd"]
+        #     load["pd"] = pd
+        #     load["qd"] = qd
+        # end
+
+        # for shunt in bus_shunts
+        #     gs = bs = zeros(3)
+        #     gs[shunt["connections"]] .+= shunt["gs"]
+        #     bs[load["connections"]] .+= shunt["bs"]
+        #     shunt["gs"] = gs
+        #     load["bs"] = bs
+        # end
 
         JuMP.@constraint(model,
             sum(p[:,a] for a in ref[:bus_arcs_branch][i]) .==
@@ -58,6 +73,7 @@ function solve_opf_acr(data, optimizer; verbose=true)
             sum([load["qd"] for load in bus_loads], init=[0;0;0]) .+
             sum([shunt["bs"] for shunt in bus_shunts], init=[0;0;0]).*(vr[:,i].^2 + vi[:,i].^2)
         )
+
         if bus["bus_type"] != 3
             JuMP.@constraint(model, bus["vmin"].^2 .<= vr[:, i].^2 + vi[:, i].^2  .<= bus["vmax"].^2)
         end
