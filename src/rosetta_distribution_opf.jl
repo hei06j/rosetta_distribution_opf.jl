@@ -12,14 +12,15 @@ module rosetta_distribution_opf
 
     export build_mc_opf
 
+    include("./3wire/ACP.jl")
+    include("./3wire/ACR.jl")
+
     include("./4wire_IVR/PMD/base.jl")
     include("./4wire_IVR/PMD/variables.jl")
     include("./4wire_IVR/PMD/constraint_template.jl")
     include("./4wire_IVR/PMD/constraint.jl")
-    include("./4wire_IVR/PMD/objective.jl")
     include("./4wire_IVR/PMD/ivr.jl")
 
-    include("./3wire/ACP.jl")
-    include("./3wire/ACR.jl")
-
+    include("./4wire_IVR/RPMD/IVR_EN.jl")
+    
 end # module rosetta_distribution_opf
