@@ -9,7 +9,8 @@ const _PMD = PowerModelsDistribution
 const RPMD = rosetta_distribution_opf
 const IM = InfrastructureModels
 
-data_path = "./data/test_load_1ph_wye_cp.dss"
+# data_path = "./data/test_load_1ph_wye_cp.dss"
+data_path = "./data/test_load_1ph_delta_cp.dss"
 
 ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "sb"=>"yes","warm_start_init_point"=>"yes")
 data_eng = _PMD.parse_file(data_path, transformations=[_PMD.remove_all_bounds!])
@@ -575,3 +576,8 @@ JuMP.@objective(model, Min, sum( gen["cost"][1]*sum(pg[i]) + gen["cost"][2] for 
 
 JuMP.optimize!(model)
 cost = JuMP.objective_value(model)
+
+##
+PMD.add_start_vrvi!(data_math)
+pm = PMD.instantiate_mc_model(data_math, PMD.IVRENPowerModel, PMD.build_mc_opf);
+res = PMD.optimize_model!(pm, optimizer=ipopt_solver)
