@@ -158,7 +158,7 @@ for (id, generator) in ref[:gen]
     qmax = get(generator, "qmax", fill( Inf, N))
 
     # constraint_mc_generator_current(pm, id)
-    if configuration==PMD.WYE || length(pmin)==1 || nphases==1
+    if configuration==_PMD.WYE || length(pmin)==1 || nphases==1
         phases = connections[1:end-1]
         n      = connections[end]
 
@@ -302,20 +302,20 @@ for (id, load) in ref[:load]
     a, alpha, b, beta = _PMD._load_expmodel_params(load, bus)
 
     int_dim = RPMD._infer_int_dim_unit(load, false)
-    if configuration==PMD.WYE || int_dim==1
+    if configuration==_PMD.WYE || int_dim==1
         phases = connections[1:end-1]
         n      = connections[end]
 
         vr_pn = [vr[bus_id][p]-vr[bus_id][n] for p in phases]
         vi_pn = [vi[bus_id][p]-vi[bus_id][n] for p in phases]
 
-        if load_model==PMD.POWER
+        if load_model==_PMD.POWER
             pd = a
             qd = b
-        elseif load_model==PMD.IMPEDANCE
+        elseif load_model==_PMD.IMPEDANCE
             pd = a .* (vr_pn.^2 .+ vi_pn.^2)
             qd = b .* (vr_pn.^2 .+ vi_pn.^2)
-        elseif load_model==PMD.CURRENT
+        elseif load_model==_PMD.CURRENT
             pd = JuMP.@variable(model, [c in 1:int_dim])
             qd = JuMP.@variable(model, [c in 1:int_dim])
             JuMP.@constraint(model, pd.^2 .== a.^2 .* (vr_pn.^2 .+ vi_pn.^2))

@@ -20,7 +20,7 @@ data_path = "./data/test_load_1ph_wye_cp.dss"
 # data_path = "./data/test_load_3ph_delta_ci.dss"
 # data_path = "./data/test_load_3ph_wye_ci.dss"
 # data_path = "./data/test_load_3ph_delta_cz.dss"
-# data_path = "./data/test_load_3ph_wye_ci.dss"
+# data_path = "./data/test_load_3ph_wye_cz.dss"
 # data_path = "./data/test_trans_dy.dss"  # grounding reactor is removed + initialization should be updated
 # data_path = "./data/test_trans_yy.dss"  # grounding reactor is removed + initialization should be updated
 

@@ -4,26 +4,33 @@ using rosetta_distribution_opf
 import PowerModelsDistribution
 import InfrastructureModels
 using Ipopt
-using JuMP
+using JuMP  # bl/array_nl
 const PMD = PowerModelsDistribution
 const RPMD = rosetta_distribution_opf
 const IM = InfrastructureModels
 
-# data_path = "./data/test_gen_3ph_wye.dss"
-data_path = "./data/test_load_1ph_wye_cp.dss"
+# data_path = "./data/test_gen_3ph_wye.dss"         # works
+# data_path = "./data/test_gen_3ph_delta.dss"
+# data_path = "./data/test_gen_1ph_wye.dss"         # works
+# data_path = "./data/test_gen_1ph_delta.dss"
+# data_path = "./data/test_load_1ph_delta_cp.dss" 
+# data_path = "./data/test_load_1ph_wye_cp.dss"     # works
+# data_path = "./data/test_load_3ph_delta_cp.dss"
+data_path = "./data/test_load_3ph_wye_cp.dss"      # works
+# data_path = "./data/test_load_3ph_delta_ci.dss"
+# data_path = "./data/test_load_3ph_wye_ci.dss"     # works
+# data_path = "./data/test_load_3ph_delta_cz.dss"
+# data_path = "./data/test_load_3ph_wye_cz.dss"     # works
+
 
 ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "sb"=>"yes","warm_start_init_point"=>"yes")
 data_eng = PMD.parse_file(data_path, transformations=[PMD.remove_all_bounds!])
 RPMD.pv1_correction!(data_eng)
-# data_eng["voltage_source"]["source"]["rs"] *= 0
-# data_eng["voltage_source"]["source"]["xs"] *= 0
+data_eng["voltage_source"]["source"]["rs"] *= 0
+data_eng["voltage_source"]["source"]["xs"] *= 0
 data_math = PMD.transform_data_model(data_eng, multinetwork=false, kron_reduce=false, phase_project=false)
 
-
-time_data_start = time()
 ref = IM.build_ref(data_math, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
-data_load_time = time() - time_data_start
-time_model_start = time()
 
 ##
 model = JuMP.Model(Ipopt.Optimizer)
@@ -38,63 +45,38 @@ vr = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([t in vr[i].axes[1] ? v
 vi = Dict(i => JuMP.@variable(model, [t in terminals[i], i], base_name="vi", start = imag(v_start)[t], lower_bound = -ref[:bus][i]["vmax"][t], upper_bound = ref[:bus][i]["vmax"][t] ) for i in keys(ref[:bus]))
 vi = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([t in vi[i].axes[1] ? vi[i][t,i] : 0.0 for t in 1:n_ph, i in keys(ref[:bus])]), 1:n_ph, keys(ref[:bus]))
 
-# [all_variables(model)[1:40] all_variables(model)[41:80] all_variables(model)[81:120] all_variables(model)[121:160]]
-
 nconds = Dict(l => length(branch["f_connections"]) for (l,branch) in ref[:branch])
 conds = Dict(l => branch["f_connections"] for (l,branch) in ref[:branch])
 cr = Dict((l,i,j) => JuMP.@variable(model, [c in conds[l]], base_name="cr_$((l,i,j))") for (l,i,j) in ref[:arcs_branch]) # , lower_bound = -ref[:branch][l]["c_rating_a"], upper_bound = ref[:branch][l]["c_rating_a"]
 cr = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in cr[(l,i,j)].axes[1] ? cr[(l,i,j)][c] : 0.0 for c in 1:n_ph, (l,i,j) in ref[:arcs_branch]]), 1:n_ph, ref[:arcs_branch])
 ci = Dict((l,i,j) => JuMP.@variable(model, [c in conds[l]], base_name="ci_$((l,i,j))") for (l,i,j) in ref[:arcs_branch]) # , lower_bound = -ref[:branch][l]["c_rating_a"], upper_bound = ref[:branch][l]["c_rating_a"]
 ci = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in ci[(l,i,j)].axes[1] ? ci[(l,i,j)][c] : 0.0 for c in 1:n_ph, (l,i,j) in ref[:arcs_branch]]), 1:n_ph, ref[:arcs_branch])
-# cr = Dict((l,i,j) => JuMP.@variable(model, [c in conds[l], (l,i,j)=ref[:arcs_branch]], base_name="cr") for (l,i,j) in ref[:arcs_branch]) # , lower_bound = -ref[:branch][l]["c_rating_a"], upper_bound = ref[:branch][l]["c_rating_a"]
-# ci = Dict((l,i,j) => JuMP.@variable(model, [c in conds[l], (l,i,j)=ref[:arcs_branch]], base_name="ci") for (l,i,j) in ref[:arcs_branch]) 
-# cr = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in cr[(l,i,j)].axes[1] ? cr[(l,i,j)][c, (l,i,j)] : 0.0 for c in 1:n_ph, (l,i,j) in ref[:arcs_branch]]), 1:n_ph, ref[:arcs_branch])
-# ci = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in ci[(l,i,j)].axes[1] ? ci[(l,i,j)][c, (l,i,j)] : 0.0 for c in 1:n_ph, (l,i,j) in ref[:arcs_branch]]), 1:n_ph, ref[:arcs_branch])
 
 csr = Dict(l => JuMP.@variable(model, [c in conds[l]], base_name="csr_$l") for (l,i,j) in ref[:arcs_branch])
 csi = Dict(l => JuMP.@variable(model, [c in conds[l]], base_name="csi_$l") for (l,i,j) in ref[:arcs_branch])
 csr = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in csr[l].axes[1] ? csr[l][c] : 0.0 for c in 1:n_ph, l in keys(ref[:branch])]), 1:n_ph, keys(ref[:branch]))
 csi = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in csi[l].axes[1] ? csi[l][c] : 0.0 for c in 1:n_ph, l in keys(ref[:branch])]), 1:n_ph, keys(ref[:branch]))
-# csr = Dict(l => JuMP.@variable(model, [c in conds[l], l], base_name="csr") for (l,i,j) in ref[:arcs_branch])
-# csi = Dict(l => JuMP.@variable(model, [c in conds[l], l], base_name="csi") for (l,i,j) in ref[:arcs_branch])
-# csr = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in csr[l].axes[1] ? csr[l][c,l] : 0.0 for c in 1:n_ph, l in keys(ref[:branch])]), 1:n_ph, keys(ref[:branch]))
-# csi = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in csi[l].axes[1] ? csi[l][c,l] : 0.0 for c in 1:n_ph, l in keys(ref[:branch])]), 1:n_ph, keys(ref[:branch]))
 cr_bus = Dict{Tuple{Int,Int,Int}, Any}()
 ci_bus = Dict{Tuple{Int,Int,Int}, Any}()
-
-
 
 int_dim = Dict(i => RPMD._infer_int_dim_unit(gen, false) for (i,gen) in ref[:gen])
 crg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="crg_$i") for i in keys(ref[:gen]))
 cig = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="cig_$i") for i in keys(ref[:gen]))
 crg = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? crg[i][c] : 0.0 for c in 1:n_ph, i in keys(ref[:gen])]), 1:n_ph, keys(ref[:gen]))
 cig = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? cig[i][c] : 0.0 for c in 1:n_ph, i in keys(ref[:gen])]), 1:n_ph, keys(ref[:gen]))
-# crg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i], i], base_name="crg") for i in keys(ref[:gen]))
-# cig = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i], i], base_name="cig") for i in keys(ref[:gen]))
-# crg = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? crg[i][c,i] : 0.0 for c in 1:n_ph, i in keys(ref[:gen])]), 1:n_ph, keys(ref[:gen]))
-# cig = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? cig[i][c,i] : 0.0 for c in 1:n_ph, i in keys(ref[:gen])]), 1:n_ph, keys(ref[:gen]))
 
-pg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="pg", lower_bound=ref[:gen][i]["pmin"][c], upper_bound=ref[:gen][i]["pmax"][c]) for i in keys(ref[:gen]))
-qg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="qg", lower_bound=ref[:gen][i]["qmin"][c], upper_bound=ref[:gen][i]["qmax"][c]) for i in keys(ref[:gen]))
+pg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="pg_$i") for i in keys(ref[:gen]))
+qg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="qg_$i") for i in keys(ref[:gen]))
 pg = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? pg[i][c] : 0.0 for c in 1:n_ph, i in keys(ref[:gen])]), 1:n_ph, keys(ref[:gen]))
 qg = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? qg[i][c] : 0.0 for c in 1:n_ph, i in keys(ref[:gen])]), 1:n_ph, keys(ref[:gen]))
-# pg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i], i], base_name="pg", lower_bound=ref[:gen][i]["pmin"][c], upper_bound=ref[:gen][i]["pmax"][c]) for i in keys(ref[:gen]))
-# qg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i], i], base_name="qg", lower_bound=ref[:gen][i]["qmin"][c], upper_bound=ref[:gen][i]["qmax"][c]) for i in keys(ref[:gen]))
-# pg = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? pg[i][c,i] : 0.0 for c in 1:n_ph, i in keys(ref[:gen])]), 1:n_ph, keys(ref[:gen]))
-# qg = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? qg[i][c,i] : 0.0 for c in 1:n_ph, i in keys(ref[:gen])]), 1:n_ph, keys(ref[:gen]))
 crg_bus = Dict{Int, Any}()
 cig_bus = Dict{Int, Any}()
 
-
 int_dim = Dict(i => RPMD._infer_int_dim_unit(load, false) for (i,load) in ref[:load])
-crd = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="crd") for i in keys(ref[:load]))
-cid = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="cid") for i in keys(ref[:load]))
+crd = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="crd_$i") for i in keys(ref[:load]))
+cid = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="cid_$i") for i in keys(ref[:load]))
 crd = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? crd[i][c] : 0.0 for c in 1:n_ph, i in keys(ref[:load])]), 1:n_ph, keys(ref[:load]))
 cid = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? cid[i][c] : 0.0 for c in 1:n_ph, i in keys(ref[:load])]), 1:n_ph, keys(ref[:load]))
-# crd = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i], i], base_name="crd") for i in keys(ref[:load]))
-# cid = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i], i], base_name="cid") for i in keys(ref[:load]))
-# crd = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? crd[i][c,i] : 0.0 for c in 1:n_ph, i in keys(ref[:load])]), 1:n_ph, keys(ref[:load]))
-# cid = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in 1:int_dim[i] ? cid[i][c,i] : 0.0 for c in 1:n_ph, i in keys(ref[:load])]), 1:n_ph, keys(ref[:load]))
 crd_bus = Dict{Int, Any}()
 cid_bus = Dict{Int, Any}()
 
@@ -111,8 +93,25 @@ for (i, bus) in ref[:bus]
         JuMP.@constraint(model, vr[:,i] .== vrefre)
         JuMP.@constraint(model, vi[:,i] .== vrefim)
     end
+    
+    # ungrounded_terminals = terminals[(!).(grounded)]
+    # for (idx,t) in enumerate(terminals)
+    #     if !grounded[idx]
+    #         if bus["vmax"][idx] < Inf
+    #             JuMP.@constraint(model, vr[t,i]^2+vi[t,i]^2 <= bus["vmax"][idx]^2)
+    #         end
+    #         if bus["vmin"][idx] > 0.0
+    #             JuMP.@constraint(model, vr[t,i]^2+vi[t,i]^2 >= bus["vmin"][idx]^2)
+    #         end
+    #     end
+    # end
 
-    JuMP.@constraint(model, bus["vmin"][bus["terminals"]].^2 .<= vr[:,i].^2 .+ vi[:,i].^2 .<= bus["vmax"][bus["terminals"]].^2)
+    ungrounded_terminals = [t for (idx,t) in enumerate(terminals) if !grounded[idx]]
+    nonzero_vmin_terminals = ungrounded_terminals[bus["vmin"][ungrounded_terminals] .> 0]
+    JuMP.@constraint(model, Vector{JuMP.AffExpr}(vr[nonzero_vmin_terminals,i]).^2 .+ Vector{JuMP.AffExpr}(vi[nonzero_vmin_terminals,i]).^2 .>= bus["vmin"][nonzero_vmin_terminals].^2)
+
+    nonInf_vmax_terminals = ungrounded_terminals[bus["vmax"][ungrounded_terminals] .< Inf]
+    JuMP.@constraint(model, Vector{JuMP.AffExpr}(vr[nonInf_vmax_terminals,i]).^2 .+ Vector{JuMP.AffExpr}(vi[nonInf_vmax_terminals,i]).^2 .<= bus["vmax"][nonInf_vmax_terminals].^2)
 end
 
 
@@ -131,23 +130,49 @@ for (id, generator) in ref[:gen]
 
     # constraint_mc_generator_current(pm, id)
     if configuration==PMD.WYE || length(pmin)==1 || nphases==1
-        p = connections[1:end-1]
+        phases = connections[1:end-1]
         n = connections[end]
 
-        crg_bus[id] = JuMP.Containers.DenseAxisArray([crg[p,id]..., -sum(crg[p,id])], connections)
-        cig_bus[id] = JuMP.Containers.DenseAxisArray([cig[p,id]..., -sum(cig[p,id])], connections)
+        crg_bus[id] = JuMP.Containers.DenseAxisArray([crg[phases,id]..., -sum(crg[phases,id])], connections)
+        cig_bus[id] = JuMP.Containers.DenseAxisArray([cig[phases,id]..., -sum(cig[phases,id])], connections)
 
-        JuMP.@constraint(model,  pg[p,id] .==  (vr[p,bus_id] .- vr[n,bus_id]) .* crg[p,id] .+ (vi[p,bus_id] .- vi[n,bus_id]) .* cig[p,id])
-        JuMP.@constraint(model,  qg[p,id] .== -(vr[p,bus_id] .- vr[n,bus_id]) .* cig[p,id] .+ (vi[p,bus_id] .- vi[n,bus_id]) .* crg[p,id])
+        JuMP.@constraint(model,  pg[phases,id] .==  (vr[phases,bus_id] .- vr[n,bus_id]) .* crg[phases,id] .+ (vi[phases,bus_id] .- vi[n,bus_id]) .* cig[phases,id])
+        # JuMP.@constraint(model, pmin .<= pg[phases,id] .<= pmax )
+        nonInf_pmin_pmax = [idx for (idx,t) in enumerate(pmin) if pmin[idx].>-Inf || pmax[idx].<Inf]
+        JuMP.@constraint(model, pmin[nonInf_pmin_pmax] .<= pg[nonInf_pmin_pmax,id] .<= pmax[nonInf_pmin_pmax] )
 
-        JuMP.@constraint(model, pmin .<= pg[p,id] .<= pmax )
-        JuMP.@constraint(model, qmin .<= qg[p,id] .<= qmax )
+
+        nonInf_qmin_qmax = [idx for (idx,t) in enumerate(qmin) if qmin[idx].>-Inf || qmax[idx].<Inf]
+        JuMP.@constraint(model,  qg[nonInf_qmin_qmax,id] .== -(vr[nonInf_qmin_qmax,bus_id] .- vr[n,bus_id]) .* cig[nonInf_qmin_qmax,id] .+ (vi[nonInf_qmin_qmax,bus_id] .- vi[n,bus_id]) .* crg[nonInf_qmin_qmax,id])
+        JuMP.@constraint(model, qmin[nonInf_qmin_qmax] .<= qg[nonInf_qmin_qmax,id] .<= qmax[nonInf_qmin_qmax] )
+        JuMP.@constraint(model, qmin .<= qg[phases,id] .<= qmax )
+
+        for (idx, p) in enumerate(phases)
+            if pmin[idx]>-Inf
+                JuMP.@constraint(model, pmin[idx] .<= pg[p,id])
+            end
+            if pmax[idx]< Inf
+                JuMP.@constraint(model, pmax[idx] .>= pg[p,id])
+            end
+            if qmin[idx]>-Inf || qmax[idx]< Inf
+                JuMP.@constraint(model, qg[p,id] .== -(vr[p,bus_id] .- vr[n,bus_id]) .* cig[p,id] .+ (vi[p,bus_id] .- vi[n,bus_id]) .* crg[p,id])
+                if qmin[idx]>-Inf
+                    JuMP.@constraint(model, qmin[idx] .<= qg[p,id])
+                end
+                if qmax[idx]< Inf
+                    JuMP.@constraint(model, qmax[idx] .>= qg[p,id])
+                end
+            end
+        end
 
     else ## configuration==PMD.DELTA
 
-        Md =PMD._get_delta_transformation_matrix(length(connections))
-        crg_bus[id] = _merge_bus_flows(model, Md'*crg[id], connections)
-        cig_bus[id] = _merge_bus_flows(model, Md'*cig[id], connections)
+        Md = PMD._get_delta_transformation_matrix(length(connections))
+        # crg_bus[id] = _merge_bus_flows(model, Md'*crg[id], connections)
+        # cig_bus[id] = _merge_bus_flows(model, Md'*cig[id], connections)
+
+        crg_bus[id] = JuMP.Containers.DenseAxisArray(Md'*crg[id], connections)
+        cig_bus[id] = JuMP.Containers.DenseAxisArray(Md'*cig[id], connections)
 
         nph = length(pmin)
         vrg = Dict()
@@ -168,8 +193,9 @@ for (id, generator) in ref[:gen]
         JuMP.@NLconstraint(model, [i in 1:nph], qmax[i] >= qg[id][i])
     end
 end
-crg_bus = JuMP.Containers.DenseAxisArray([crg_bus[i][t] for t in 1:n_ph , i in keys(ref[:gen])], 1:n_ph, keys(ref[:gen]))
-cig_bus = JuMP.Containers.DenseAxisArray([cig_bus[i][t] for t in 1:n_ph , i in keys(ref[:gen])], 1:n_ph, keys(ref[:gen]))
+crg_bus = JuMP.Containers.DenseAxisArray([t in crg_bus[i].axes[1] ? crg_bus[i][t] : 0 for t in 1:n_ph, i in keys(ref[:gen])], 1:n_ph, keys(ref[:gen]))
+cig_bus = JuMP.Containers.DenseAxisArray([t in cig_bus[i].axes[1] ? cig_bus[i][t] : 0 for t in 1:n_ph, i in keys(ref[:gen])], 1:n_ph, keys(ref[:gen]))
+
 
 
 for (i, branch) in ref[:branch]
@@ -257,13 +283,14 @@ for (id, load) in ref[:load]
         p = connections[1:end-1]
         n = connections[end]
 
-        crd_vec = [crd[idx,id] for (idx,c) in enumerate(crd[:,id])]
-        cid_vec = [cid[idx,id] for (idx,c) in enumerate(cid[:,id])]
+        vr_pn = Vector{JuMP.AffExpr}(vr[p,bus_id] .- vr[n,bus_id])
+        vi_pn = Vector{JuMP.AffExpr}(vi[p,bus_id] .- vi[n,bus_id])
 
-        vr_pn = vr[p,bus_id] .- vr[n,bus_id]
-        vi_pn = vi[p,bus_id] .- vi[n,bus_id]
-        vr_pn = [vr_pn[idx] for (idx,v) in enumerate(vr_pn)]
-        vi_pn = [vi_pn[idx] for (idx,v) in enumerate(vi_pn)]
+        # crd_vec = [crd[idx,id] for (idx,c) in enumerate(crd[:,id])]
+        # cid_vec = [cid[idx,id] for (idx,c) in enumerate(cid[:,id])]
+
+        # vr_pn = [vr_pn[idx] for (idx,v) in enumerate(vr_pn)]
+        # vi_pn = [vi_pn[idx] for (idx,v) in enumerate(vi_pn)]
 
         if load_model==PMD.POWER
             pd = a
@@ -282,30 +309,28 @@ for (id, load) in ref[:load]
             error("Load model $model for load $id is not supported by this formulation.")
         end
 
-        # JuMP.@constraint(model, crd[p,id] .== 
-        #         a .* vr_pn .* (vr_pn.^2 .+ vi_pn.^2).^(alpha/2 .-1)
-        #      .+ b .* vi_pn .* (vr_pn.^2 .+ vi_pn.^2).^(beta/2 .-1))
-        # JuMP.@constraint(model, cid[p,id] .== 
-        #         a .* vi_pn .* (vr_pn.^2 .+ vi_pn.^2).^(alpha/2 .-1)
-        #      .- b .* vr_pn .* (vr_pn.^2 .+ vi_pn.^2).^(beta/2 .-1))
-        # JuMP.@constraint(model, pd .==  vr_pn .* crd[p,id] .+ vi_pn .* cid[p,id])
-        # JuMP.@constraint(model, qd .== -vr_pn .* cid[p,id] .+ vi_pn .* crd[p,id])
-        # crd_bus[id] = JuMP.Containers.DenseAxisArray([crd[p,id]..., -sum(crd[p,id])], connections)
-        # cid_bus[id] = JuMP.Containers.DenseAxisArray([cid[p,id]..., -sum(cid[p,id])], connections)
-        
-        JuMP.@constraint(model, crd_vec[p] .== 
+        JuMP.@constraint(model, Vector{JuMP.AffExpr}(crd[p,id]) .== 
                 a .* vr_pn .* (vr_pn.^2 .+ vi_pn.^2).^(alpha/2 .-1)
              .+ b .* vi_pn .* (vr_pn.^2 .+ vi_pn.^2).^(beta/2 .-1))
-        JuMP.@constraint(model, cid_vec[p] .== 
+        JuMP.@constraint(model, Vector{JuMP.AffExpr}(cid[p,id]) .== 
                 a .* vi_pn .* (vr_pn.^2 .+ vi_pn.^2).^(alpha/2 .-1)
              .- b .* vr_pn .* (vr_pn.^2 .+ vi_pn.^2).^(beta/2 .-1))
-        JuMP.@constraint(model, pd .==  vr_pn .* crd_vec[p] .+ vi_pn .* cid_vec[p])
-        JuMP.@constraint(model, qd .== -vr_pn .* cid_vec[p] .+ vi_pn .* crd_vec[p])
-        crd_bus[id] = JuMP.Containers.DenseAxisArray([crd_vec[p]..., -sum(crd_vec[p])], connections)
-        cid_bus[id] = JuMP.Containers.DenseAxisArray([cid_vec[p]..., -sum(cid_vec[p])], connections)
+        # JuMP.@constraint(model, pd .==  vr_pn .* Vector{JuMP.AffExpr}(crd[p,id]) .+ vi_pn .* Vector{JuMP.AffExpr}(cid[p,id]))
+        # JuMP.@constraint(model, qd .== -vr_pn .* Vector{JuMP.AffExpr}(cid[p,id]) .+ vi_pn .* Vector{JuMP.AffExpr}(crd[p,id]))
+        crd_bus[id] = JuMP.Containers.DenseAxisArray([Vector{JuMP.AffExpr}(crd[p,id])..., -sum(Vector{JuMP.AffExpr}(crd[p,id]))], connections)
+        cid_bus[id] = JuMP.Containers.DenseAxisArray([Vector{JuMP.AffExpr}(cid[p,id])..., -sum(Vector{JuMP.AffExpr}(cid[p,id]))], connections)
 
-        # # crd_bus[id] = _merge_bus_flows(model, [crd[id]..., crd_bus_n], connections)
-        # # cid_bus[id] = _merge_bus_flows(model, [cid[id]..., cid_bus_n], connections)
+        # JuMP.@constraint(model, crd_vec[p] .== 
+        #         a .* vr_pn .* (vr_pn.^2 .+ vi_pn.^2).^(alpha/2 .-1)
+        #      .+ b .* vi_pn .* (vr_pn.^2 .+ vi_pn.^2).^(beta/2 .-1))
+        # JuMP.@constraint(model, cid_vec[p] .== 
+        #         a .* vi_pn .* (vr_pn.^2 .+ vi_pn.^2).^(alpha/2 .-1)
+        #      .- b .* vr_pn .* (vr_pn.^2 .+ vi_pn.^2).^(beta/2 .-1))
+        # JuMP.@constraint(model, pd .==  vr_pn .* crd_vec[p] .+ vi_pn .* cid_vec[p])
+        # JuMP.@constraint(model, qd .== -vr_pn .* cid_vec[p] .+ vi_pn .* crd_vec[p])
+        # crd_bus[id] = JuMP.Containers.DenseAxisArray([crd_vec[p]..., -sum(crd_vec[p])], connections)
+        # cid_bus[id] = JuMP.Containers.DenseAxisArray([cid_vec[p]..., -sum(cid_vec[p])], connections)
+
         # # crd_bus[id] = JuMP.Containers.DenseAxisArray([t in crd_bus[id].axes[1] ? crd_bus[id][t] : 0 for t in 1:n_ph], 1:n_ph)
         # # cid_bus[id] = JuMP.Containers.DenseAxisArray([t in cid_bus[id].axes[1] ? cid_bus[id][t] : 0 for t in 1:n_ph], 1:n_ph)
         
@@ -371,18 +396,20 @@ for (i, bus) in ref[:bus]
 
     Gt, Bt = RPMD._build_bus_shunt_matrices(ref, terminals, bus_shunts)
 
-    # ungrounded_terminals = [(idx,t) for (idx,t) in enumerate(terminals) if !grounded[idx]]
+    ungrounded_terminals = [t for (idx,t) in enumerate(terminals) if !grounded[idx]]
 
-    JuMP.@constraint(model, sum(cr_bus[:,a] for (a, conns) in bus_arcs) .==
-                            sum(crg_bus[:,g] for (g, conns) in bus_gens) .- 
-                            sum(crd_bus[:,d] for (d, conns) in bus_loads) .-
-                            sum( Gt * Array(vr[:,i]) .- Bt * Array(vi[:,i])) 
+    JuMP.@constraint(model, sum(Vector{JuMP.AffExpr}(cr_bus[ungrounded_terminals,a]) for (a, conns) in bus_arcs) .==
+                            sum(Vector{JuMP.AffExpr}(crg_bus[ungrounded_terminals,g]) for (g, conns) in bus_gens) .- 
+                            sum(Vector{JuMP.AffExpr}(crd_bus[ungrounded_terminals,d]) for (d, conns) in bus_loads) .-
+                            Gt[ungrounded_terminals,ungrounded_terminals] * Vector{JuMP.AffExpr}(vr[ungrounded_terminals,i]) .- 
+                                Bt[ungrounded_terminals,ungrounded_terminals] * Vector{JuMP.AffExpr}(vi[ungrounded_terminals,i])
                             )
     
-    JuMP.@constraint(model, sum(ci_bus[:,a] for (a, conns) in bus_arcs) .==
-                            sum(cig_bus[:,g] for (g, conns) in bus_gens) .- 
-                            sum(cid_bus[:,d] for (d, conns) in bus_loads) .-
-                            sum( Gt * Array(vi[:,i]) .+ Bt * Array(vr[:,i])) 
+    JuMP.@constraint(model, sum(Vector{JuMP.AffExpr}(ci_bus[ungrounded_terminals,a]) for (a, conns) in bus_arcs) .==
+                            sum(Vector{JuMP.AffExpr}(cig_bus[ungrounded_terminals,g]) for (g, conns) in bus_gens) .- 
+                            sum(Vector{JuMP.AffExpr}(cid_bus[ungrounded_terminals,d]) for (d, conns) in bus_loads) .-
+                            Gt[ungrounded_terminals,ungrounded_terminals] * Vector{JuMP.AffExpr}(vi[ungrounded_terminals,i]) .+
+                                Bt[ungrounded_terminals,ungrounded_terminals] * Vector{JuMP.AffExpr}(vr[ungrounded_terminals,i])
                             )
     
 end
@@ -393,6 +420,7 @@ JuMP.@objective(model, Min, sum(gen["cost"][1]*sum(pg[:,i]) + gen["cost"][2] for
 
 
 JuMP.optimize!(model)
+cost = JuMP.objective_value(model)
 
 
 # ##
@@ -417,6 +445,4 @@ JuMP.optimize!(model)
 PMD.add_start_vrvi!(data_math)
 pm = PMD.instantiate_mc_model(data_math, PMD.IVRENPowerModel, PMD.build_mc_opf);
 res = PMD.optimize_model!(pm, optimizer=ipopt_solver)
-println(pm.model)
-
-[all_variables(pm.model)[1:26] all_variables(model)[27:52]]
+# println(pm.model)
