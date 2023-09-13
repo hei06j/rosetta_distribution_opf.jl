@@ -1,0 +1,7 @@
+! Subset of available target linecodes, which are closest to the original ones in terms of positive sequence impedance
+! ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+! original name: BS 5467 1997 table 10 16 (50 Hz)
+New LineCode.LC1 nphases=3 Units=km
+~ Rmatrix=(1.42582   0.266248 0 | 0.269826  1.41416 0 | 0 0 0)
+~ Xmatrix=(0.185543   0.113603 0 | 0.0612218  0.149104 0 | 0 0 0)
+~ Cmatrix=(0.0 0.0 0 | 0.0 0.0 0 | 0 0 0)

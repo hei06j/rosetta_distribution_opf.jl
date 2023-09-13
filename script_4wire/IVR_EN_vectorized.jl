@@ -94,7 +94,7 @@ for (i, bus) in ref[:bus]
         JuMP.@constraint(model, vr[:,i] .== vrefre)
         JuMP.@constraint(model, vi[:,i] .== vrefim)
     end
-
+    
     ungrounded_terminals = [t for (idx,t) in enumerate(terminals) if !grounded[idx]]
     nonzero_vmin_terminals = ungrounded_terminals[bus["vmin"][ungrounded_terminals] .> 0]
     JuMP.@constraint(model, Vector{JuMP.AffExpr}(vr[nonzero_vmin_terminals,i]).^2 .+ Vector{JuMP.AffExpr}(vi[nonzero_vmin_terminals,i]).^2 .>= bus["vmin"][nonzero_vmin_terminals].^2)

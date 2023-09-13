@@ -81,7 +81,7 @@ for network in readdir(data_dir)
 
                 ### ACP
                 results_rosetta_acp = RPMD.solve_opf_acp(data, ipopt_solver; verbose=false);
-                @show file_name, "ACPPPP"
+                @show file_name, "ACP"
 
                 # pm_acp = PMD.instantiate_mc_model(data, PMD.ACPUPowerModel, PMD.build_mc_opf)
                 # for (i, bus) in PMD.ref(pm_acp, 0, :ref_buses)
