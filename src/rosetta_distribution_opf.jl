@@ -22,5 +22,6 @@ module rosetta_distribution_opf
     include("./4wire_IVR/PMD/ivr.jl")
 
     include("./4wire_IVR/RPMD/IVR_EN.jl")
-    
+    include("./4wire_IVR/RPMD/IVR_EN_vectorized.jl")
+
 end # module rosetta_distribution_opf

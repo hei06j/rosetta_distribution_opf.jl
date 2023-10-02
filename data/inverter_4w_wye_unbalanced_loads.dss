@@ -15,11 +15,13 @@ New Line.Line1 bus1=B1.1.2.3.0 bus2=B2.1.2.3.4 linecode=Zabcn length=1 units=km
 
 ! creates unbalance at B2:
 ! vm_b2 = [0.964, 1.01, 1.00, 0.05] without other devices active
-New Load.Load1  phases=1 bus1=B2.1.4  kv=0.23  model=1 conn=wye kVA=5  pf=0.9 vminpu=0.1 vmaxpu=2
+New Load.Load1  phases=1 bus1=B2.1.4  kv=0.23  model=1 conn=wye kVA=10  pf=0.9 vminpu=0.1 vmaxpu=2
+New Load.Load2  phases=1 bus1=B2.2.4  kv=0.23  model=1 conn=wye kVA=5  pf=0.9 vminpu=0.1 vmaxpu=2
+// New Load.Load3  phases=1 bus1=B2.3.4  kv=0.23  model=1 conn=wye kVA=1  pf=0.9 vminpu=0.1 vmaxpu=2
 
 ! this will be converted to a generator in the data model transformation
 ! do not change to anything besides PF=1.0; weird OpenDSS behavior
-New PVSystem.PV1 phases=3 conn=wye bus1=B2.1.2.3 kv=0.4 kva=25 pf=1.0
+New PVSystem.PV1 phases=3 conn=wye bus1=B2.1.2.3.4 kv=0.4 kva=40 pf=1.0
 
 Set voltagebases=[0.4]
 Calcvoltagebases

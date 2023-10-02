@@ -1,0 +1,89 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (MiKTeX 20.11) (preloaded format=latex 2021.12.9)  26 SEP 2023 15:28
+entering extended mode
+**./gr-temp/d6085ffd94799982175a4b6286682447.tex
+(gr-temp/d6085ffd94799982175a4b6286682447.tex
+LaTeX2e <2020-10-01> patch level 2
+L3 programming layer <2020-10-27> xparse <2020-03-03> ("/Library/Application Su
+pport/MiKTeX/texmfs/install/tex/latex/base/article.cls"
+Document Class: article 2020/04/10 v1.4m Standard LaTeX document class
+("/Library/Application Support/MiKTeX/texmfs/install/tex/latex/base/size10.clo"
+File: size10.clo 2020/04/10 v1.4m Standard LaTeX file (size option)
+)
+\c@part=\count175
+\c@section=\count176
+\c@subsection=\count177
+\c@subsubsection=\count178
+\c@paragraph=\count179
+\c@subparagraph=\count180
+\c@figure=\count181
+\c@table=\count182
+\abovecaptionskip=\skip47
+\belowcaptionskip=\skip48
+\bibindent=\dimen138
+)
+("/Library/Application Support/MiKTeX/texmfs/install/tex/latex/graphics/color.s
+ty"
+Package: color 2020/02/24 v1.2b Standard LaTeX Color (DPC)
+
+("/Library/Application Support/MiKTeX/texmfs/install/tex/latex/graphics-cfg/col
+or.cfg"
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package color Info: Driver file: dvips.def on input line 147.
+
+("/Library/Application Support/MiKTeX/texmfs/install/tex/latex/graphics-def/dvi
+ps.def"
+File: dvips.def 2017/06/20 v3.1d Graphics/color driver for dvips
+)
+("/Library/Application Support/MiKTeX/texmfs/install/tex/latex/graphics/dvipsna
+m.def"
+File: dvipsnam.def 2016/06/17 v3.0m Driver-dependent file (DPC,SPQR)
+))
+("/Library/Application Support/MiKTeX/texmfs/install/tex/latex/l3backend/l3back
+end-dvips.def"
+File: l3backend-dvips.def 2020-09-24 L3 backend support: dvips
+\l__pdf_internal_box=\box47
+\g__pdf_backend_object_int=\count183
+\l__pdf_backend_content_box=\box48
+\l__pdf_backend_model_box=\box49
+\g__pdf_backend_annotation_int=\count184
+\g__pdf_backend_link_int=\count185
+\g__pdf_backend_link_sf_int=\count186
+)
+No file d6085ffd94799982175a4b6286682447.aux.
+\openout1 = `d6085ffd94799982175a4b6286682447.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 5.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 5.
+[1
+
+]
+(/Users/hei06j/Documents/repositories/remote/rosetta_distribution_opf.jl/gr-tem
+p/d6085ffd94799982175a4b6286682447.aux) ) 
+Here is how much of TeX's memory you used:
+ 632 strings out of 481733
+ 11786 string characters out of 2919953
+ 270610 words of memory out of 3000000
+ 17452 multiletter control sequences out of 15000+200000
+ 535088 words of font info for 29 fonts, out of 3000000 for 9000
+ 0 hyphenation exceptions out of 8191
+ 43i,5n,49p,206b,101s stack positions out of 5000i,500n,10000p,200000b,50000s
+
+Output written on /Users/hei06j/Documents/repositories/remote/rosetta_distribut
+ion_opf.jl/gr-temp/d6085ffd94799982175a4b6286682447.dvi (1 page, 512 bytes).
