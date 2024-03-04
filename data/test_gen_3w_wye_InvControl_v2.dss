@@ -30,7 +30,7 @@ New Load.Load2  phases=1 bus1=B2.2  kv=0.23  model=1 conn=wye kVA=5  pf=0.9 vmin
 ! do not change to anything besides PF=1.0; weird OpenDSS behavior
 New PVSystem.PV1 phases=3 conn=wye bus1=B2.1.2.3 kv=0.4 kva=40 pf=1.0 irradiance=1 Pmpp=35 %R=0 %X=0 model=1
 New XYCurve.vv_curve npts=4 Yarray=(1.0,1.0,-1.0,-1.0) XArray=(0.5,0.95,1.05,1.5)
-New InvControl.InvPVCtrl mode=VOLTVAR voltage_curvex_ref=rated vvc_curve1=vv_curve EventLog=yes  VarChangeTolerance=0.0001 VoltageChangeTolerance=0.0000001
+New InvControl.InvPVCtrl mode=VOLTVAR voltage_curvex_ref=rated vvc_curve1=vv_curve EventLog=yes  //VarChangeTolerance=0.0001 VoltageChangeTolerance=0.0000001
 
 
 Set voltagebases=[0.4]
