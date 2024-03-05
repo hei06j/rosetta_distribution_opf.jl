@@ -97,26 +97,31 @@ for (id, generator) in ref[:gen]
         crg_bus[id] = JuMP.Containers.DenseAxisArray([crg[phases,id]..., -sum(crg[phases,id])], connections)
         cig_bus[id] = JuMP.Containers.DenseAxisArray([cig[phases,id]..., -sum(cig[phases,id])], connections)
 
-        nonInf_pmin_pmax = [idx for (idx,t) in enumerate(pmin) if pmin[idx].>-Inf || pmax[idx].<Inf]
+        nonInf_pmin_pmax_idx = [idx for (idx,p) in enumerate(phases) if pmin[idx].>-Inf || pmax[idx].<Inf]
+        nonInf_pmin_pmax_p = [p for (idx,p) in enumerate(phases) if pmin[idx].>-Inf || pmax[idx].<Inf]
         # JuMP.@constraint(model, pmin[nonInf_pmin_pmax] .<= pg[nonInf_pmin_pmax,id] .<= pmax[nonInf_pmin_pmax] )
-        if !isempty(nonInf_pmin_pmax)
-            JuMP.@constraint(model, pmin[nonInf_pmin_pmax] .<= pg[nonInf_pmin_pmax,id] .<= pmax[nonInf_pmin_pmax] * 3 )
-            JuMP.@constraint(model, sum(pg[nonInf_pmin_pmax,id]) .<= sum(pmax[nonInf_pmin_pmax]) )
+        if !isempty(nonInf_pmin_pmax_idx)
+            # JuMP.@constraint(model, pmin[nonInf_pmin_pmax_idx] .<= pg[nonInf_pmin_pmax_p,id] .<= pmax[nonInf_pmin_pmax_idx] * 3 )
+            JuMP.@constraint(model, pmin[nonInf_pmin_pmax_idx] .<= pg[nonInf_pmin_pmax_p,id] .<= pmax[nonInf_pmin_pmax_idx])
+            JuMP.@constraint(model, sum(pg[nonInf_pmin_pmax_p,id]) .<= sum(pmax[nonInf_pmin_pmax_idx]) )
         end
 
-        nonInf_qmin_qmax = [idx for (idx,t) in enumerate(qmin) if qmin[idx].>-Inf || qmax[idx].<Inf]
-        # JuMP.@constraint(model, qmin[nonInf_qmin_qmax] .<= qg[nonInf_qmin_qmax,id] .<= qmax[nonInf_qmin_qmax] )            
-        if !isempty(nonInf_pmin_pmax)
-            JuMP.@constraint(model, qmin[nonInf_qmin_qmax] * 3 .<= qg[nonInf_qmin_qmax,id] .<= qmax[nonInf_qmin_qmax] * 3 )
-            JuMP.@constraint(model, sum(qmin[nonInf_qmin_qmax]) .<= sum(qg[nonInf_qmin_qmax,id]) .<= sum(qmax[nonInf_qmin_qmax]) )
+        nonInf_qmin_qmax_idx = [idx for (idx,p) in enumerate(phases) if qmin[idx].>-Inf || qmax[idx].<Inf]
+        nonInf_qmin_qmax_p = [p for (idx,p) in enumerate(phases) if qmin[idx].>-Inf || qmax[idx].<Inf]
+        if !isempty(nonInf_qmin_qmax_idx)
+            # JuMP.@constraint(model, qmin[nonInf_qmin_qmax_idx] * 3 .<= qg[nonInf_qmin_qmax_p,id] .<= qmax[nonInf_qmin_qmax_idx] * 3 )
+            JuMP.@constraint(model, qmin[nonInf_qmin_qmax_idx] .<= qg[nonInf_qmin_qmax_p,id] .<= qmax[nonInf_qmin_qmax_idx] )
+            JuMP.@constraint(model, sum(qmin[nonInf_qmin_qmax_idx]) .<= sum(qg[nonInf_qmin_qmax_p,id]) .<= sum(qmax[nonInf_qmin_qmax_idx]) )
         end
-
+        
         if explicit_neutral
-            JuMP.@constraint(model,  pg[phases,id] .==  (vr[phases,bus_id] .- vr[n,bus_id]) .* crg[phases,id] .+ (vi[phases,bus_id] .- vi[n,bus_id]) .* cig[phases,id])
-            JuMP.@constraint(model, qg[nonInf_qmin_qmax,id] .== -(vr[nonInf_qmin_qmax,bus_id] .- vr[n,bus_id]) .* cig[nonInf_qmin_qmax,id] .+ (vi[nonInf_qmin_qmax,bus_id] .- vi[n,bus_id]) .* crg[nonInf_qmin_qmax,id])
+            JuMP.@constraint(model, pg[phases,id] .==  (vr[phases,bus_id] .- vr[n,bus_id]) .* crg[phases,id] .+ (vi[phases,bus_id] .- vi[n,bus_id]) .* cig[phases,id])
+            JuMP.@constraint(model, qg[nonInf_qmin_qmax_p,id] .== -(vr[nonInf_qmin_qmax_p,bus_id] .- vr[n,bus_id]) .* cig[nonInf_qmin_qmax_p,id] .+ (vi[nonInf_qmin_qmax_p,bus_id] .- vi[n,bus_id]) .* crg[nonInf_qmin_qmax_p,id])
+            # JuMP.@constraint(model, qg[phases,id] .== -(vr[phases,bus_id] .- vr[n,bus_id]) .* cig[phases,id] .+ (vi[phases,bus_id] .- vi[n,bus_id]) .* crg[phases,id])
         else
-            JuMP.@constraint(model,  pg[phases,id] .==  vr[phases,bus_id] .* crg[phases,id] .+ vi[phases,bus_id] .* cig[phases,id])
-            JuMP.@constraint(model, qg[nonInf_qmin_qmax,id] .== -vr[nonInf_qmin_qmax,bus_id] .* cig[nonInf_qmin_qmax,id] .+ vi[nonInf_qmin_qmax,bus_id] .* crg[nonInf_qmin_qmax,id])
+            JuMP.@constraint(model, pg[phases,id] .==  vr[phases,bus_id] .* crg[phases,id] .+ vi[phases,bus_id] .* cig[phases,id])
+            JuMP.@constraint(model, qg[nonInf_qmin_qmax_p,id] .== -vr[nonInf_qmin_qmax_p,bus_id] .* cig[nonInf_qmin_qmax_p,id] .+ vi[nonInf_qmin_qmax_p,bus_id] .* crg[nonInf_qmin_qmax_p,id])
+            # JuMP.@constraint(model, qg[phases,id] .== -(vr[phases,bus_id] .- vr[n,bus_id]) .* cig[phases,id] .+ (vi[phases,bus_id] .- vi[n,bus_id]) .* crg[phases,id])
         end
 
     else ## configuration==PMD.DELTA

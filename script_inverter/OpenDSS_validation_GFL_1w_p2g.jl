@@ -6,50 +6,11 @@ import InfrastructureModels
 import OpenDSSDirect
 using Ipopt
 using JuMP  # bl/array_nl
+
 const PMD = PowerModelsDistribution
 const RPMD = rosetta_distribution_opf
 const IM = InfrastructureModels
 const ODSS = OpenDSSDirect
-
-##
-# ODSS.dss("Redirect ./data/test_gen_4w_wye_InvControl_p_copy2.dss")
-# vm_Control_p2g = ODSS.Circuit.AllBusVolts()
-# cm_Control_p2g = ODSS.PDElements.AllCurrentsAllCurrents()
-# vm1_Control_p2g = abs.(vm_Control_p2g)[1:3]
-# pg_Control_p2g = ODSS.PVsystems.kW()
-# qg_Control_p2g = ODSS.PVsystems.kvar()
-# @show [round.(vm1_Control_p2g, digits=4) ; qg_Control_p2g]
-
-# ##
-# ODSS.dss("Redirect ./data/test_gen_4w_wye_InvControl_p_copy3.dss")
-# vm_Control_p2g = ODSS.Circuit.AllBusVolts()
-# cm_Control_p2g = ODSS.PDElements.AllCurrentsAllCurrents()
-# vm1_Control_p2g = abs.(vm_Control_p2g)[1:3]./230.94
-# vm2_Control_p2g = abs.(vm_Control_p2g)[4:6]./230.94
-# pg_Control_p2g = ODSS.PVsystems.kW()
-# qg_Control_p2g = ODSS.PVsystems.kvar()
-# @show [round.(vm2_Control_p2g, digits=4) ; qg_Control_p2g]
-
-# s_load = [9+im*4.358898943540673 ; 4.5+im*2.1794494717703365 ; 0]*1E3
-# v_load = vm_Control_p2n[8:10]
-# c_load_transpose = s_load./v_load
-# s_line21 = (vm_Control_p2n[4:6].-vm_Control_p2n[7]) .* transpose(cm_Control_p2n[5:7])'
-# s_g2 = (vm_Control_p2n[4:6].-vm_Control_p2n[7]) .* (transpose(cm_Control_p2n[5:7])' .+ c_load_transpose)
-# pg3 = real.(s_g2) ./ 1E3
-# qg3 = imag.(s_g2) ./ 1E3
-# sum(pg3)
-# sum(qg3)
-# round.(vm2_Control_p2n, digits=4)
-
-##
-# ODSS.dss("Redirect ./data/test_gen_4w_wye_InvControl_p_copy.dss")
-# vm_Control_p2g = ODSS.Circuit.AllBusVolts()
-# cm_Control_p2g = ODSS.PDElements.AllCurrentsAllCurrents()
-# vm1_Control_p2g = abs.(vm_Control_p2g)[1:3]
-# vm2_Control_p2g = abs.(vm_Control_p2g)[4:7]./230.94
-# pg_Control_p2g = ODSS.PVsystems.kW()
-# qg_Control_p2g = ODSS.PVsystems.kvar()
-# @show [round.(vm2_Control_p2g, digits=4) ; qg_Control_p2g]
 
 ##
 ODSS.dss("Redirect ./data/test_gen_1w_wye_InvControl_p2g.dss")
@@ -62,23 +23,36 @@ qg_Control_p2g = ODSS.PVsystems.kvar()
 
 round.(vm2_Control_p2g, digits=4)
 
-@show [round.(vm2_Control_p2g, digits=4) ; qg_Control_p2g]
+ODSS.PVsystems.First()
+pg1 = ODSS.PVsystems.kW()
+qg1 = ODSS.PVsystems.kvar()
 
-###
+ODSS.PVsystems.Next()
+pg2 = ODSS.PVsystems.kW()
+qg2 = ODSS.PVsystems.kvar()
+
+ODSS.PVsystems.Next()
+pg3 = ODSS.PVsystems.kW()
+qg3 = ODSS.PVsystems.kvar()
+
+qg_dss = [qg1;qg2;qg3]
+
+@show [round.(vm2_Control_p2g, digits=4) ; round.(qg_dss, digits=4) ; round.(sum(qg_dss), digits=4) ]
+
+##
 data_path = "./data/test_gen_1w_wye_p2g.dss"
 
 ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "sb"=>"yes","warm_start_init_point"=>"yes")
 data_eng = PMD.parse_file(data_path, transformations=[PMD.remove_all_bounds!, PMD.transform_loops!])
-RPMD.pv1_correction!(data_eng)
 data_eng["settings"]["sbase_default"] = 1
 data_eng["voltage_source"]["source"]["rs"] *= 0
 data_eng["voltage_source"]["source"]["xs"] *= 0
 data_math = PMD.transform_data_model(data_eng, multinetwork=false, kron_reduce=false, phase_project=false)
 
-data_math["bus"]["1"]["vmin"] = [0.9 * ones(3) ; 0 ]
-data_math["bus"]["1"]["vmax"] = [1.1 * ones(3) ; Inf]
+data_math["bus"]["1"]["vmin"] = [0.7 * ones(3) ; 0 ]
+data_math["bus"]["1"]["vmax"] = [1.3 * ones(3) ; Inf]
 
-for gen_id in [1] #[1, 2, 3]
+for gen_id in [1, 2, 3]
     gen = data_math["gen"]["$gen_id"]
     smax = 13.33
     pmax = 11.66
@@ -87,7 +61,6 @@ for gen_id in [1] #[1, 2, 3]
     gen["pg"] = pmax
     gen["qmax"] = sqrt.(smax^2 - pmax^2)
     gen["qmin"] = -gen["qmax"]
-
     gen["cost"] = [0 0]
 end
 data_math["gen"]["2"]["cost"] = [1000 0]
@@ -95,7 +68,7 @@ data_math["gen"]["2"]["cost"] = [1000 0]
 
 ref = IM.build_ref(data_math, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
 ref[:bus][1]["grounded"][4] = 1
-##
+###
 model = JuMP.Model(Ipopt.Optimizer)
 
 
@@ -116,17 +89,18 @@ end
 vv_curve(v, qmax) = v <= 0.95 ? qmax : (v >= 1.05 ? -qmax : -2*qmax/0.1*(v-1))
 JuMP.@operator(model, vv, 2, vv_curve)
 
-for gen_id in [1]
+for gen_id in [1,2,3]
     gen = data_math["gen"]["$gen_id"]
     bus_id = gen["gen_bus"]
-    vmin = 0.9; vmax = 1.1;
+    # vmin = 0.9; vmax = 1.1;
     phases = gen["connections"][1:end-1]
     n = gen["connections"][end]
+    @show gen_id, bus_id, phases, n
+    @show qg[phases[1], gen_id], vm[phases[1],bus_id], gen["qmax"]
 
-    JuMP.@constraint(model, qg[phases[1], gen_id] == vv(vm[phases[1],bus_id], gen["qmax"]) )
+    @show JuMP.@constraint(model, qg[phases[1], gen_id] == vv(vm[phases[1],bus_id], gen["qmax"]) )
+    # JuMP.@constraint(model, qg[phases, gen_id] == 0 )
 end
-
-
 
 ###
 JuMP.optimize!(model)
@@ -138,16 +112,33 @@ vbase = 230.94
 gen_id = 1
 sum(pg_values[:,gen_id])
 sum(qg_values[:,gen_id])
-round.(abs.(JuMP.value.(vm))[:,1], digits=4)
+
+vm_pmd = abs.(JuMP.value.(vm))[:,1]
+qg_pmd = [qg_values[1,1];qg_values[2,2];qg_values[3,3]]
+@show [round.(vm_pmd, digits=4); round.(qg_pmd, digits=4) ]
+
 
 ##
-@show [round.(vm2_Control_p2g, digits=4) ; qg_Control_p2g]
+@show [round.(vm2_Control_p2g, digits=4) ; round.([qg1;qg2;qg3], digits=4) ; round.(qg1+qg2+qg3, digits=4) ]
 
-@show [round.(abs.(JuMP.value.(vm))[:,1], digits=4); sum(qg_values[:,gen_id])]
+@show [round.(vm_pmd, digits=4); round.(qg_pmd, digits=4) ; round.(sum(qg_pmd), digits=4)]
 
-gen = data_math["gen"]["1"]
-
+##
 using Plots
-plot(0.9:0.001:1.1, vv_curve.(0.9:0.001:1.1, gen["qmax"]))
-scatter!([0.9771], [2.471036945328084])
-scatter!([0.9795], [2.6545020762993796])
+
+plt = plot()
+for gen_id in [1, 2, 3]
+    gen = data_math["gen"]["$gen_id"]
+    smax = 13.33
+    pmax = 11.66
+    gen["pmax"] = pmax
+    gen["pmin"] = pmax
+    gen["pg"] = pmax
+    gen["qmax"] = sqrt.(smax^2 - pmax^2)
+    gen["qmin"] = -gen["qmax"]
+    
+    plot!(0.9:0.001:1.1, vv_curve.(0.9:0.001:1.1, gen["qmax"]), label=false)
+    scatter!([vm2_Control_p2g[gen_id]], [qg_dss[gen_id]], label="dss, phase $gen_id")
+    scatter!([vm_pmd[gen_id]], [qg_pmd[gen_id]], label="pmd, phase $gen_id")
+end
+plt
