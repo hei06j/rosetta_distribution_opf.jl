@@ -76,7 +76,7 @@ model = JuMP.Model(Ipopt.Optimizer)
 objective = "cost"
 include("./core/variables.jl")
 include("./core/constraints.jl")
-include("./objectives.jl")
+include("./core/objectives.jl")
 
 
 ### Inverter control Volt-var
