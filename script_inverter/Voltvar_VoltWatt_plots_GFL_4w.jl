@@ -42,7 +42,7 @@ gen["qmin"] = -gen["qmax"]
 
 
 include("./core/inverter_loss_branch.jl")
-add_inverter_losses(data_math, gen_id)
+add_inverter_losses!(data_math, gen_id)
 
 data_math["gen"]["1"]["cost"] = [10 0]
 data_math["gen"]["2"]["cost"] = [1000 0]

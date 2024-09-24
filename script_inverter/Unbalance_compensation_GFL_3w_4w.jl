@@ -121,7 +121,7 @@ data_math = parse_data(data_path)
 # data_math["bus"]["1"]["terminals"] = data_math["bus"]["1"]["terminals"][1:4]
 # data_math["bus"]["1"]["grounded"] = data_math["bus"]["1"]["grounded"][1:4]
 include("./core/inverter_loss_branch.jl")
-add_inverter_losses(data_math, gen_id, three_wire=true)
+add_inverter_losses!(data_math, gen_id, three_wire=true)
 ref = IM.build_ref(data_math, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
 
 model = JuMP.Model(Ipopt.Optimizer)
@@ -138,7 +138,7 @@ get_solutions!(model, results_GFL_3w, objective)
 data_path = "./data/inverter_4w_wye_unbalanced_loads.dss"
 data_math = parse_data(data_path)
 include("./core/inverter_loss_branch.jl")
-add_inverter_losses(data_math, gen_id)
+add_inverter_losses!(data_math, gen_id)
 ref = IM.build_ref(data_math, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
 
 model = JuMP.Model(Ipopt.Optimizer)

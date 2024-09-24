@@ -60,7 +60,7 @@ for i = 1:20:length(data_math["load"])
     gen["Dp"] = 0.01 * ones(3)
     gen["Dq"] = 0.02 * ones(3)
 
-    add_inverter_losses(data_math, gen_id, GFM=true)
+    add_inverter_losses!(data_math, gen_id, GFM=true)
 end
 
 
@@ -80,7 +80,7 @@ for i = 31:20:length(data_math["load"])
     gen["cost"] = [10 0]
     gen["type"] = "GFL-4w"
 
-    add_inverter_losses(data_math, gen_id)
+    add_inverter_losses!(data_math, gen_id)
 end
 
 for i in [11]
@@ -100,7 +100,7 @@ for i in [11]
     gen["cost"] = [10 0]
     gen["type"] = "GFL-3w"
 
-    add_inverter_losses(data_math, gen_id, three_wire=true)
+    add_inverter_losses!(data_math, gen_id, three_wire=true)
 end
 
 

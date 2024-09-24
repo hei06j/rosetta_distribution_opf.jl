@@ -131,7 +131,10 @@ elseif objective in ["IUF" "IUF2" "PIUR"]
 elseif objective in ["IUF_inv" "IUF2_inv"]
     branch_id = 1
     branch = ref[:branch][branch_id]
-    arc =  (1, 2, 1)
+    # arc = (1, 2, 1)
+    # arc = (4, 5, 3)  # this is for case5_gen_3ph_wye.dss
+    _, _, arc, branch = RPMD.get_ref_bus_branch(ref)
+    @show arc
     nconds = Dict(l => length(branch["f_connections"]) for (l,branch) in ref[:branch])
     conds = Dict(l => branch["f_connections"] for (l,branch) in ref[:branch])
     
@@ -150,11 +153,11 @@ elseif objective in ["IUF_inv" "IUF2_inv"]
     JuMP.@constraint(model, ci_012[phases,arc] .== Tre * Array(ci_bus[phases,arc]) .+ Tim * Array(cr_bus[phases,arc]))
     JuMP.@constraint(model, cm_012[phases,arc].^2 .== cr_012[phases,arc].^2 .+ ci_012[phases,arc].^2)
 
-    if objective == "IUF"
+    if objective == "IUF_inv"
         # JuMP.@objective(model, Min, cmg_012[3,1] / cmg_012[2,1])
         JuMP.@objective(model, Min, cm_012[3,arc] / cm_012[2,arc])
 
-    elseif objective == "IUF2"
+    elseif objective == "IUF2_inv"
         # JuMP.@objective(model, Min, cmg_012[3,1])
         JuMP.@objective(model, Min, cm_012[3,arc])
     

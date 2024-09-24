@@ -57,3 +57,76 @@ crd = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in crd[i].axes[1] ?
 cid = JuMP.Containers.DenseAxisArray(Matrix{JuMP.AffExpr}([c in cid[i].axes[1] ? cid[i][c] : 0.0 for c in 1:n_ph, i in keys(ref[:load])]), 1:n_ph, keys(ref[:load]))
 crd_bus = Dict{Int, Any}()
 cid_bus = Dict{Int, Any}()
+
+
+bg = Dict()
+alpha_g = Dict()
+if multileg && multiplexing
+    for gen_id in pv_gen_ids
+        # gen_id = 1
+        gen = data_math["gen"]["$gen_id"]
+        connections = gen["connections"]
+        if multiplexing_binary
+            bg["$gen_id"] = JuMP.@variable(model, [connections, 1:m_legs], base_name="bg_$gen_id", Bin)
+        else
+            bg["$gen_id"] = JuMP.@variable(model, [connections, 1:m_legs], base_name="bg_$gen_id", lower_bound=0, upper_bound=1)
+        end
+        # bg = [1 1 0 0 0 0 0 0 ; 0 0 1 1 0 0 0 0 ; 0 0 0 0 1 1 0 0 ; 0 0 0 0 0 0 1 1]
+        JuMP.@constraint(model, [i in 1:size(bg["$gen_id"],2)], sum(bg["$gen_id"][:,i]) == 1)
+        # JuMP.@constraint(model, [j in 1:size(bg,1)], sum(bg[j,:]) >= 1)
+        alpha_g["$gen_id"] = 1/m_legs * ones(m_legs)
+    end
+elseif multileg && !multiplexing
+    for gen_id in pv_gen_ids
+        m_legs = 4
+        # gen_id = 1
+        bg["$gen_id"] = LinearAlgebra.I(m_legs)
+        alpha_g["$gen_id"] = 1/m_legs * ones(m_legs)
+    end
+end
+
+
+# if inverter_dc_bus
+#     ref_gen, ref_bus, ref_arc, ref_branch = RPMD.get_ref_bus_branch(ref)
+#     pv_genids, pv_buses, pv_branches = get_pv_bus_branch(ref)
+
+#     int_dim = Dict(i => RPMD._infer_int_dim_unit(gen, !(4 in gen["connections"])) for (i,gen) in ref[:gen])
+#     connections = Dict(i => gen["connections"][1:int_dim[i]] for (i, gen) in ref[:gen])
+
+#     crg_dc = Dict(i => JuMP.@variable(model, base_name="crg_dc_$i") for i in pv_genids)
+#     # cig_dc = Dict(i => JuMP.@variable(model, base_name="cig_dc_$i") for i in pv_genids)
+#     crg_dc = JuMP.Containers.DenseAxisArray(Vector{JuMP.AffExpr}([crg_dc[i] for i in pv_genids]), pv_genids)
+#     # cig_dc = JuMP.Containers.DenseAxisArray(Vector{JuMP.AffExpr}([cig_dc[i] for i in pv_genids]), pv_genids)
+
+#     pg_dc = Dict(i => JuMP.@variable(model, base_name="pg_dc_$i") for i in pv_genids)
+#     # qg_dc = Dict(i => JuMP.@variable(model, base_name="qg_dc_$i") for i in pv_genids)
+#     pg_dc = JuMP.Containers.DenseAxisArray(Vector{JuMP.AffExpr}([pg_dc[i] for i in pv_genids]), pv_genids)
+#     # qg_dc = JuMP.Containers.DenseAxisArray(Vector{JuMP.AffExpr}([qg_dc[i] for i in pv_genids]), pv_genids)
+#     crg_dc_bus = Dict{Int, Any}()
+#     # cig_dc_bus = Dict{Int, Any}()
+
+#     vg_dc = Dict(i => JuMP.@variable(model, base_name="vg_dc_$i") for i in pv_genids)
+#     vg_dc = JuMP.Containers.DenseAxisArray(Vector{JuMP.AffExpr}([vg_dc[i] for i in pv_genids]), pv_genids)
+
+#     for id in pv_genids
+#         generator = ref[:gen][id]
+#         explicit_neutral = 4 in generator["connections"]
+#         nphases = RPMD._infer_int_dim_unit(generator, !explicit_neutral)
+#         bus_id = generator["gen_bus"]
+#         bus = ref[:bus][bus_id]
+#         configuration = generator["configuration"]
+#         connections = generator["connections"]
+
+#         if configuration==PMD.WYE || length(pmin)==1 || nphases==1
+#             if explicit_neutral
+#                 phases = connections[1:end-1]
+#                 n = connections[end]
+#             else
+#                 phases = connections
+#                 n = 4
+#             end
+#             JuMP.@constraint(model, pg_dc[phases,id] .==  vg_dc[phases,bus_id] .* crg_dc[phases,id])
+#         end
+#     end
+    
+# end

@@ -63,7 +63,7 @@ gen["Dq"] = 2*diag(data_math["branch"]["1"]["br_x"])[1:3]
 # gen["Dq"] = 0.02 * ones(3)
 
 include("./core/inverter_loss_branch.jl")
-add_inverter_losses(data_math, gen_id, GFM=true)
+add_inverter_losses!(data_math, gen_id, GFM=true)
 
 ref = IM.build_ref(data_math, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
 

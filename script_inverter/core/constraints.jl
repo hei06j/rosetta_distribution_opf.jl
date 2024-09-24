@@ -165,7 +165,22 @@ for (i, branch) in ref[:branch]
     x = branch["br_x"]
     f_connections =  branch["f_connections"]
     t_connections =  branch["t_connections"]
+
     c_rating = branch["c_rating_a"]
+
+    # if i in pv_gen_ids && multileg && multiplexing
+    if i == 2 && multileg && multiplexing
+        Sbase = ref[:settings]["sbase"]   # p.u.
+        Sbace_Factor = ref[:settings]["power_scale_factor"]
+        Vbase = 0.2309  # [kV]
+        Vbase_Factor = ref[:settings]["voltage_scale_factor"]
+        Ibase = (Sbase * Sbace_Factor) / (Vbase * Vbase_Factor)  #[kA]
+        vbase_max = 253
+        
+        gen_id = 1
+        c_rating_max = 3*ref[:gen][gen_id]["pmax"][1] * 1000 / (vbase_max*3) / Ibase  # TODO create a mapping of a pv gen to its internal branch, save into ref
+        c_rating = JuMP.@expression(model,  sum(c_rating_max) * Array(bg["$gen_id"]) * alpha_g["$gen_id"])
+    end
 
     vr_fr = [vr[idx,f_bus] for (idx,v) in enumerate(vr[:,f_bus])]
     vi_fr = [vi[idx,f_bus] for (idx,v) in enumerate(vi[:,f_bus])]
@@ -197,9 +212,9 @@ for (i, branch) in ref[:branch]
     ### constraint_mc_bus_voltage_drop
     JuMP.@constraint(model, vr_to .== vr_fr .- r*csr_fr .+ x*csi_fr)
     JuMP.@constraint(model, vi_to .== vi_fr .- r*csi_fr .- x*csr_fr)
-
+    
     ### constraint_mc_branch_current_limit
-    cnds_finite_rating = [c for (c,r) in enumerate(c_rating) if r<Inf]
+    cnds_finite_rating = [c for (c,r) in enumerate(c_rating) if r!==Inf]
     JuMP.@constraint(model, cr_fr[cnds_finite_rating].^2 .+ ci_fr[cnds_finite_rating].^2 .<= c_rating[cnds_finite_rating].^2)
     JuMP.@constraint(model, cr_to[cnds_finite_rating].^2 .+ ci_to[cnds_finite_rating].^2 .<= c_rating[cnds_finite_rating].^2)
 

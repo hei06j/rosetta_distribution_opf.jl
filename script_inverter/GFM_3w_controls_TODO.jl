@@ -50,7 +50,7 @@ data_math["gen"]["1"]["cost"] = [10 0]
 data_math["gen"]["2"]["cost"] = [1000 0]
 
 include("./core/inverter_loss_branch.jl")
-add_inverter_losses(data_math, gen_id; GFM=true, three_wire=true)
+add_inverter_losses!(data_math, gen_id; GFM=true, three_wire=true)
 
 ref = IM.build_ref(data_math, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
 

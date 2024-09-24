@@ -1,0 +1,37 @@
+! This case is designed to test a 1-phase, delta-connected generator
+
+Clear
+
+New Circuit.Test phases=3 basekv=0.4 baseMVA=1 bus1=B1 MVASC1=1e8 MVASC3=1e8
+
+New Linecode.Zabcn units=km nphases=4
+~ rmatrix=(0.227217624 0.059217624 0.059217624 0.059217624 |0.059217624 0.227217624 0.059217624 0.059217624 |0.059217624 0.059217624 0.227217624 0.059217624 |0.059217624 0.059217624 0.059217624 0.227217624)
+~ xmatrix=(0.879326005 0.541069709 0.475545802 0.449141163 |0.541069709 0.879326005 0.516533439 0.475545802 |0.475545802 0.516533439 0.879326005 0.541069709 |0.449141163 0.475545802 0.541069709 0.879326005)
+~ cmatrix=(0 | 0 0 | 0 0 0 | 0 0 0 0)
+~ Rg = 0
+~ Xg = 0
+
+new Line.line1 bus1=B1.1.2.3.0 bus2=B2.1.2.3.4 linecode=Zabcn length=1 units=km
+new Line.line2 bus1=B2.1.2.3.4 bus2=B3.1.2.3.4 linecode=Zabcn length=1 units=km
+new Line.line3 bus1=B3.1.2.3.4 bus2=B4.1.2.3.4 linecode=Zabcn length=1 units=km
+new Line.line4 bus1=B4.1.2.3.4 bus2=B5.1.2.3.4 linecode=Zabcn length=1 units=km
+new Line.line5 bus1=B5.1.2.3.4 bus2=B6.1.2.3.4 linecode=Zabcn length=1 units=km
+
+// new Load.load1 phases=1 bus1=B3.1.4 kv=0.2309 model=1 conn=wye kVA=8 pf=0.9 vminpu=0.6 vmaxpu=1.4
+new Load.load2 phases=1 bus1=B4.2.4 kv=0.2309 model=1 conn=wye kVA=2 pf=0.9 vminpu=0.6 vmaxpu=1.4
+// new Load.load3 phases=1 bus1=B6.3.4 kv=0.2309 model=1 conn=wye kVA=4 pf=0.9 vminpu=0.6 vmaxpu=1.4
+new Load.load3 phases=1 bus1=B6.3.4 kv=0.2309 model=2 conn=wye kVA=4 pf=0.9 vminpu=0.6 vmaxpu=1.4 Rneut=0  // an impedance load to ground not to neutral
+
+
+// new capacitor.capac1 phases=1 bus1=B5.3 kvar=4.5 kv=0.2309
+
+! this will be converted to a generator in the data model transformation
+! do not change to anything besides PF=1.0; weird OpenDSS behavior
+New PVSystem.PV1 phases=3 conn=wye bus1=B3.1.2.3.4 kv=0.4 kva=25 pf=1.0 irradiance=1 Pmpp=20 %R=0 %X=0 model=1
+New PVSystem.PV2 phases=3 conn=wye bus1=B5.1.2.3.4 kv=0.4 kva=25 pf=1.0 irradiance=1 Pmpp=20 %R=0 %X=0 model=1
+// New PVSystem.PV3 phases=3 conn=wye bus1=B5.1.2.3.4 kv=0.4 kva=10 pf=1.0 irradiance=1 Pmpp=10 %R=0 %X=0 model=1
+
+set voltagebases=[0.4]
+calcvoltagebases
+
+Solve

@@ -1,4 +1,3 @@
-
 function add_inverter_losses!(data_math, gen_id; multiplexing=false, GFM=false, three_wire=false)
     gen = data_math["gen"]["$gen_id"]
     old_gen_bus = copy(gen["gen_bus"])
@@ -44,14 +43,15 @@ function add_inverter_losses!(data_math, gen_id; multiplexing=false, GFM=false, 
     new_branch_id = length(data_math["branch"]) + 1
     data_math["branch"]["$new_branch_id"] = deepcopy(data_math["branch"]["$(new_branch_id-1)"])
     data_math["branch"]["$new_branch_id"]["index"] = new_branch_id
-    data_math["branch"]["$new_branch_id"]["name"] = "GFL_internal_z_$gen_id"
+    data_math["branch"]["$new_branch_id"]["name"] = "inverter_branch_$gen_id"
     data_math["branch"]["$new_branch_id"]["br_r"] = diagm(Rf/zbase * ones(4))
     data_math["branch"]["$new_branch_id"]["br_x"] = diagm(Lf*2*pi*50/zbase * ones(4))
     data_math["branch"]["$new_branch_id"]["b_to"] = diagm(Cf*2*pi*50*zbase * ones(4))
     data_math["branch"]["$new_branch_id"]["f_bus"] = new_gen_bus
     data_math["branch"]["$new_branch_id"]["t_bus"] = old_gen_bus
 
-    gen["inverter_branch"] = new_branch_id
+    # data_math["branch"]["$new_branch_id"]["m_legs"] = 8  # add m_legs to branch data rather than gen data???
+
     if multiplexing
         gen["m_legs"] = 8
     end

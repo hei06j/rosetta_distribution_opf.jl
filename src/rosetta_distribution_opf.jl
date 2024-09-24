@@ -4,7 +4,7 @@ module rosetta_distribution_opf
     import InfrastructureModels
     import InfrastructureModels: optimize_model!, @im_fields, nw_id_default, ismultinetwork, update_data!
     import PowerModelsDistribution
-    import LinearAlgebra: diag
+    import LinearAlgebra: diag, diagm
 
 
     const _IM = InfrastructureModels
@@ -23,5 +23,15 @@ module rosetta_distribution_opf
 
     include("./4wire_IVR/RPMD/IVR_EN.jl")
     include("./4wire_IVR/RPMD/IVR_EN_vectorized.jl")
+
+    include("./util/helper_functions.jl")
+
+    include("./inverters/opf.jl")
+    include("./inverters/opf_sop.jl")
+    include("./inverters/loss_branch_inverter.jl")
+    include("./inverters/loss_branch_sop.jl")
+
+    
+
 
 end # module rosetta_distribution_opf
