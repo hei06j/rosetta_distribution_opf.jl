@@ -6,10 +6,16 @@ module rosetta_distribution_opf
     import PowerModelsDistribution
     import LinearAlgebra: diag, diagm
 
-
     const _IM = InfrastructureModels
     const _PMD = PowerModelsDistribution
 
+    using GraphPlot
+    using Graphs
+    const _GP = GraphPlot
+    const _G = Graphs
+
+    
+    import Plots
     export build_mc_opf
 
     include("./3wire/ACP.jl")
@@ -24,7 +30,15 @@ module rosetta_distribution_opf
     include("./4wire_IVR/RPMD/IVR_EN.jl")
     include("./4wire_IVR/RPMD/IVR_EN_vectorized.jl")
 
+    include("./util/graph.jl")
     include("./util/helper_functions.jl")
+    include("./util/solution.jl")
+    include("./util/visualisation.jl")
+    
+
+    include("./inverters/constraint_template_en.jl")
+    include("./inverters/en_ivr.jl")
+    include("./inverters/objective.jl")
 
     include("./inverters/opf.jl")
     include("./inverters/opf_sop.jl")
@@ -32,6 +46,4 @@ module rosetta_distribution_opf
     include("./inverters/loss_branch_sop.jl")
 
     
-
-
 end # module rosetta_distribution_opf

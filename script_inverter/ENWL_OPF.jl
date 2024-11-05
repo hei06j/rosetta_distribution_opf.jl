@@ -10,6 +10,31 @@ const PMD = PowerModelsDistribution
 const RPMD = rosetta_distribution_opf
 const IM = InfrastructureModels
 
+##
+
+ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "sb"=>"yes","warm_start_init_point"=>"yes")
+
+data_path = "./data/ENWL_4w_Network1_Feeder1/Master.dss"
+data_eng = PMD.parse_file(data_path, transformations=[PMD.transform_loops!])
+data_eng["settings"]["sbase_default"] = 1
+data_eng["voltage_source"]["source"]["rs"] *= 0
+data_eng["voltage_source"]["source"]["xs"] *= 0
+data_math = PMD.transform_data_model(data_eng, multinetwork=false, kron_reduce=false, phase_project=false)
+
+for (i, bus) in data_math["bus"]
+    bus["vmin"] = [0.9 * ones(3) ; 0 ]
+    bus["vmax"] = [1.1 * ones(3) ; Inf]
+    bus["x"] = parse(Int, i)
+    bus["y"] = parse(Int, i)
+end
+
+for (i, load) in data_math["load"]
+    load["pd"] *= 4
+    load["qd"] *= 4
+end
+
+data_math["gen"]["1"]["cost"] = [1000 0]
+
 
 ##
 include("./ENWL_OPF_NoInv_4w.jl")

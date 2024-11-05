@@ -6,6 +6,7 @@ import InfrastructureModels
 using Ipopt
 using JuMP  # bl/array_nl
 import LinearAlgebra: diag, diagm
+
 const PMD = PowerModelsDistribution
 const RPMD = rosetta_distribution_opf
 const IM = InfrastructureModels
@@ -16,7 +17,7 @@ data_path = "./data/ENWL_4w_Network1_Feeder1/Master.dss"
 
 ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "sb"=>"yes","warm_start_init_point"=>"yes")
 # data_eng = PMD.parse_file(data_path, transformations=[PMD.remove_all_bounds!, PMD.transform_loops!, PMD.reduce_lines!])
-data_eng = PMD.parse_file(data_path, transformations=[PMD.remove_all_bounds!, PMD.transform_loops!])
+data_eng = PMD.parse_file(data_path, transformations=[PMD.transform_loops!])
 # RPMD.pv1_correction!(data_eng)
 data_eng["settings"]["sbase_default"] = 1
 data_eng["voltage_source"]["source"]["rs"] *= 0
@@ -60,7 +61,7 @@ for i = 1:20:length(data_math["load"])
     gen["Dp"] = 0.01 * ones(3)
     gen["Dq"] = 0.02 * ones(3)
 
-    add_inverter_losses!(data_math, gen_id, GFM=true)
+    RPMD.add_inverter_losses!(data_math, gen_id, GFM=true)
 end
 
 
@@ -80,7 +81,7 @@ for i = 31:20:length(data_math["load"])
     gen["cost"] = [10 0]
     gen["type"] = "GFL-4w"
 
-    add_inverter_losses!(data_math, gen_id)
+    RPMD.add_inverter_losses!(data_math, gen_id)
 end
 
 for i in [11]
@@ -100,7 +101,7 @@ for i in [11]
     gen["cost"] = [10 0]
     gen["type"] = "GFL-3w"
 
-    add_inverter_losses!(data_math, gen_id, three_wire=true)
+    RPMD.add_inverter_losses!(data_math, gen_id, three_wire=true)
 end
 
 
@@ -126,9 +127,7 @@ JuMP.optimize!(model)
 @assert(JuMP.termination_status(model) == LOCALLY_SOLVED)
 obj_val_GFM = JuMP.objective_value(model)
 solve_time_GFM = JuMP.solve_time(model)
-iter_GFM = 20
-pg_vals_GFM = value.(pg)
-qg_vals_GFM = value.(qg)
+
 
 v = value.(vr) .+ im * value.(vi)
 v_axes2 = v.axes[2]
@@ -147,13 +146,3 @@ c_axes2 = c.axes[2]
 c012 = T * Array(c[1:3,:])
 c2 = c012[3,:]
 c2m = abs.(c2)
-
-# cgens = zeros(4)
-# for i = 2:7
-#     gen_bus = data_math["gen"]["$i"]["gen_bus"]
-#     t_bus = [branch["t_bus"] for (i,branch) in data_math["branch"] if branch["f_bus"]==gen_bus]
-#     arc = [(l,i,j) for (l,i,j) in ref[:arcs_branch] if i == gen_bus]
-#     cgens = [cgens abs.(c[:,arc])]
-# end
-
-# cgens_ratings= [3*data_math["gen"]["$i"]["smax"][1] * 1000 / (253*3) / 4.33 for i in 2:7]

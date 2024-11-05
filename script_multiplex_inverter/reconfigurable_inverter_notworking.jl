@@ -156,30 +156,6 @@ function get_solutions!(model, results, objective)
 end
 
 
-function plot_phasors(phasor, Imax; labeled=false, I2=[], I0=[])
-    plt = Plots.plot([0,imag.(phasor[1])], [0,real.(phasor[1])], arrow=true, color=:blue, linewidth=3, linestyle=:solid, label="a", border=:none)
-    Plots.plot!([0,imag.(phasor[2])], [0,real.(phasor[2])], arrow=true, color=:red, linewidth=3, linestyle=:solid, label="b", border=:none)
-    Plots.plot!([0,imag.(phasor[3])], [0,real.(phasor[3])], arrow=true, color=:green, linewidth=3, linestyle=:solid, label="c", border=:none)
-    if phasor[4] !==  0 + 0im
-        Plots.plot!([0,imag.(phasor[4])], [0,real.(phasor[4])], arrow=true, color=:black, linewidth=3, linestyle=:solid, label="n", border=:none)
-    end
-    Plots.plot!([0,0], [0,1.1*Imax], arrow=true, color=:grey, linestyle=:dot, label=false)
-    Plots.plot!([0,1.1*Imax*real(exp(im*210/180*pi))], [0,1.1*Imax*imag(exp(im*210/180*pi))], arrow=true, color=:grey, linestyle=:dot, label=false)
-    Plots.plot!([0,1.1*Imax*real(exp(im*330/180*pi))], [0,1.1*Imax*imag(exp(im*330/180*pi))], arrow=true, color=:grey, linestyle=:dot, label=false)
-    if labeled
-        Plots.plot!(Imax*exp.(im*(0:0.01:2pi)), color=:black, border=:none, label=false, markersize=10, legend=:bottom, legendcolumns=4, legendfontsize=30)
-    else
-        Plots.plot!(Imax*exp.(im*(0:0.01:2pi)), color=:black, border=:none, label=false, markersize=10, legend=false)
-    end
-    if !isempty(I2)
-        annotate!([-7], [-Imax], text(latexstring("I_2= $(I2)"), :black, 40))
-    end
-    if !isempty(I0)
-        annotate!([-7], [-Imax+4], text(latexstring("I_0= $(I0)"), :black, 40))
-    end
-    return plt
-end
-
 
 function add_inverter_model!(data_math)
     include("./core/inverter_loss_branch.jl")
@@ -268,11 +244,11 @@ key = [key for (key,value) in results_GFL_4w][1]
 Imax = maximum(abs.(results_GFL_4w[key]["c_load"]))
 I0_4w = round(abs(results_GFL_4w[key]["c_branch1_012"][1]), digits=2)
 I2_4w = round(abs(results_GFL_4w[key]["c_branch1_012"][3]), digits=2)
-GFL_4w_vuf_c = plot_phasors(results_GFL_4w[key]["c_branch1"], Imax; I2=I2_4w, I0=I0_4w)
+GFL_4w_vuf_c = RPMD.plot_phasors(results_GFL_4w[key]["c_branch1"], Imax; I2=I2_4w, I0=I0_4w)
 Plots.savefig(GFL_4w_vuf_c, "./Figures/GFL_4w_vuf_c.pdf")
-GFL_4w_vuf_cg = plot_phasors(results_GFL_4w[key]["c_inv"], Imax)
+GFL_4w_vuf_cg = RPMD.plot_phasors(results_GFL_4w[key]["c_inv"], Imax)
 Plots.savefig(GFL_4w_vuf_cg, "./Figures/GFL_4w_vuf_cg.pdf")
-GFL_4w_vuf_cd = plot_phasors(results_GFL_4w[key]["c_load"], Imax)
+GFL_4w_vuf_cd = RPMD.plot_phasors(results_GFL_4w[key]["c_load"], Imax)
 Plots.savefig(GFL_4w_vuf_cd, "./Figures/GFL_4w_vuf_cd.pdf")
 GFL_4w_vuf = Plots.plot(GFL_4w_vuf_c, GFL_4w_vuf_cg, GFL_4w_vuf_cd, layout=(1,3), size=(2200,700))
 Plots.savefig(GFL_4w_vuf, "./Figures/GFL_4w_vuf.pdf")
@@ -284,11 +260,11 @@ key = [key for (key,value) in results_GFL_4w_mx][1]
 Imax = maximum(abs.(results_GFL_4w_mx[key]["c_load"]))
 I0_4w_mx = round(abs(results_GFL_4w_mx[key]["c_branch1_012"][1]), digits=2)
 I2_4w_mx = round(abs(results_GFL_4w_mx[key]["c_branch1_012"][3]), digits=2)
-GFL_4w_mx_vuf_c = plot_phasors(results_GFL_4w_mx[key]["c_branch1"], Imax; I2=I2_4w_mx, I0=I0_4w_mx)
+GFL_4w_mx_vuf_c = RPMD.plot_phasors(results_GFL_4w_mx[key]["c_branch1"], Imax; I2=I2_4w_mx, I0=I0_4w_mx)
 Plots.savefig(GFL_4w_mx_vuf_c, "./Figures/GFL_4w_mx_vuf_c.pdf")
-GFL_4w_mx_vuf_cg = plot_phasors(results_GFL_4w_mx[key]["c_inv"], Imax)
+GFL_4w_mx_vuf_cg = RPMD.plot_phasors(results_GFL_4w_mx[key]["c_inv"], Imax)
 Plots.savefig(GFL_4w_mx_vuf_cg, "./Figures/GFL_4w_mx_vuf_cg.pdf")
-GFL_4w_mx_vuf_cd = plot_phasors(results_GFL_4w_mx[key]["c_load"], Imax, labeled=true)
+GFL_4w_mx_vuf_cd = RPMD.plot_phasors(results_GFL_4w_mx[key]["c_load"], Imax, labeled=true)
 Plots.savefig(GFL_4w_mx_vuf_cd, "./Figures/GFL_4w_mx_vuf_cd.pdf")
 GFL_4w_mx_vuf = Plots.plot(GFL_4w_mx_vuf_c, GFL_4w_mx_vuf_cg, GFL_4w_mx_vuf_cd, layout=(1,3), size=(2200,700))
 Plots.savefig(GFL_4w_mx_vuf, "./Figures/GFL_4w_mx_vuf.pdf")

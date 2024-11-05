@@ -1,3 +1,15 @@
+function sequence(x)
+    @assert length(x) == 3
+
+    alpha = exp(im*2/3*pi)
+    T = 1/3 * [1 1 1 ; 1 alpha alpha^2 ; 1 alpha^2 alpha]
+    Tre = real.(T)
+    Tim = imag.(T)
+
+    return T * x
+
+end
+
 function get_ref_bus_branch(ref)
     ref_bus = [i for (i,bus) in ref[:ref_buses]][1]
     ref_gen = ref[:bus_gens][ref_bus][1]
@@ -12,4 +24,12 @@ function get_pv_bus_branch(ref)
     pv_arcs = [ref[:bus_arcs_branch][i][1] for i in pv_buses]
     pv_branches = first.(pv_arcs)
     return pv_genids, pv_buses, pv_arcs, pv_branches
+end
+
+
+function set_gen_max_powers!(data_math, gen_id, kva)
+    data_math["gen"]["$gen_id"]["pmax"] = kva/3 * ones(3)
+    data_math["gen"]["$gen_id"]["pmin"] = 0 * ones(3)
+    data_math["gen"]["$gen_id"]["qmax"] = kva/3 * ones(3)
+    data_math["gen"]["$gen_id"]["qmin"] = -kva/3 * ones(3)
 end

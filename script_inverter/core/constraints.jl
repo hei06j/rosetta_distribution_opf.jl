@@ -93,7 +93,8 @@ for (id, generator) in ref[:gen]
             phases = connections
             n = 4
         end
-    
+        
+        @show id
         crg_bus[id] = JuMP.Containers.DenseAxisArray([crg[phases,id]..., -sum(crg[phases,id])], connections)
         cig_bus[id] = JuMP.Containers.DenseAxisArray([cig[phases,id]..., -sum(cig[phases,id])], connections)
 
@@ -168,19 +169,19 @@ for (i, branch) in ref[:branch]
 
     c_rating = branch["c_rating_a"]
 
-    # if i in pv_gen_ids && multileg && multiplexing
-    if i == 2 && multileg && multiplexing
-        Sbase = ref[:settings]["sbase"]   # p.u.
-        Sbace_Factor = ref[:settings]["power_scale_factor"]
-        Vbase = 0.2309  # [kV]
-        Vbase_Factor = ref[:settings]["voltage_scale_factor"]
-        Ibase = (Sbase * Sbace_Factor) / (Vbase * Vbase_Factor)  #[kA]
-        vbase_max = 253
+    # # if i in pv_gen_ids && multileg && multiplexing
+    # if i == 2 && multileg && multiplexing
+    #     Sbase = ref[:settings]["sbase"]   # p.u.
+    #     Sbace_Factor = ref[:settings]["power_scale_factor"]
+    #     Vbase = 0.2309  # [kV]
+    #     Vbase_Factor = ref[:settings]["voltage_scale_factor"]
+    #     Ibase = (Sbase * Sbace_Factor) / (Vbase * Vbase_Factor)  #[kA]
+    #     vbase_max = 253
         
-        gen_id = 1
-        c_rating_max = 3*ref[:gen][gen_id]["pmax"][1] * 1000 / (vbase_max*3) / Ibase  # TODO create a mapping of a pv gen to its internal branch, save into ref
-        c_rating = JuMP.@expression(model,  sum(c_rating_max) * Array(bg["$gen_id"]) * alpha_g["$gen_id"])
-    end
+    #     gen_id = 1
+    #     c_rating_max = 3*ref[:gen][gen_id]["pmax"][1] * 1000 / (vbase_max*3) / Ibase  # TODO create a mapping of a pv gen to its internal branch, save into ref
+    #     c_rating = JuMP.@expression(model,  sum(c_rating_max) * Array(bg["$gen_id"]) * alpha_g["$gen_id"])
+    # end
 
     vr_fr = [vr[idx,f_bus] for (idx,v) in enumerate(vr[:,f_bus])]
     vi_fr = [vi[idx,f_bus] for (idx,v) in enumerate(vi[:,f_bus])]

@@ -1,0 +1,19 @@
+Clear
+New Circuit.lvtest
+
+
+Redirect Vsource.dss
+Redirect LineCode.dss
+Redirect LoadShape.dss
+Redirect GrowthShape.dss
+// Redirect TCC_Curve.dss
+// Redirect Spectrum.dss
+Redirect m1\Branches.dss
+Redirect m1\Loads.dss
+Redirect Transformer.dss
+// Redirect Monitor.dss
+// Redirect EnergyMeter.dss
+MakeBusList
+Redirect BusVoltageBases.dss  ! set voltage bases
+Buscoords BusCoords.dss
+// GIScoords GISCoords.dss

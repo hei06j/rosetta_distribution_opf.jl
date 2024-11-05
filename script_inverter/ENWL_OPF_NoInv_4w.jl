@@ -16,7 +16,7 @@ data_path = "./data/ENWL_4w_Network1_Feeder1/Master.dss"
 
 ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>1, "sb"=>"yes","warm_start_init_point"=>"yes")
 # data_eng = PMD.parse_file(data_path, transformations=[PMD.remove_all_bounds!, PMD.transform_loops!, PMD.reduce_lines!])
-data_eng = PMD.parse_file(data_path, transformations=[PMD.remove_all_bounds!, PMD.transform_loops!])
+data_eng = PMD.parse_file(data_path, transformations=[PMD.transform_loops!])
 data_eng["settings"]["sbase_default"] = 1
 data_eng["voltage_source"]["source"]["rs"] *= 0
 data_eng["voltage_source"]["source"]["xs"] *= 0
@@ -72,7 +72,6 @@ result = JuMP.optimize!(model)
 @assert(JuMP.termination_status(model) == LOCALLY_SOLVED)
 obj_val_GEN = JuMP.objective_value(model)
 solve_time_GEN = JuMP.solve_time(model)
-iter_GEN = 22
 
 v = value.(vr) .+ im * value.(vi)
 v_axes2 = v.axes[2]

@@ -1,4 +1,4 @@
-function add_inverter_losses!(data_math, gen_id; multiplexing=false, GFM=false, three_wire=false)
+function add_inverter_losses!(data_math, gen_id; reconfigurable=false, GFM=false, three_wire=false, dc_link=true)
     gen = data_math["gen"]["$gen_id"]
     old_gen_bus = copy(gen["gen_bus"])
     new_gen_bus = length(data_math["bus"]) + 1
@@ -33,7 +33,6 @@ function add_inverter_losses!(data_math, gen_id; multiplexing=false, GFM=false, 
         #     data_math["bus"]["$new_gen_bus"]["grounded"] = Bool[0, 0, 0]
         #     data_math["bus"]["$new_gen_bus"]["terminals"] = data_math["bus"]["$new_gen_bus"]["terminals"][1:3]
         # end
-        
     end
     
     Rf = 0.015
@@ -52,8 +51,13 @@ function add_inverter_losses!(data_math, gen_id; multiplexing=false, GFM=false, 
 
     # data_math["branch"]["$new_branch_id"]["m_legs"] = 8  # add m_legs to branch data rather than gen data???
 
-    if multiplexing
+    if reconfigurable
         gen["m_legs"] = 8
+    end
+
+    if dc_link 
+        gen["pdcmin"] = -Inf
+        gen["pdcmax"] = 1
     end
 
     # if three_wire 

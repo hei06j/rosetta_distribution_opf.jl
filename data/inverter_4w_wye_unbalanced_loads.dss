@@ -21,7 +21,7 @@ New Load.Load2  phases=1 bus1=B2.2.4  kv=0.23  model=1 conn=wye kVA=5  pf=0.9 vm
 
 ! this will be converted to a generator in the data model transformation
 ! do not change to anything besides PF=1.0; weird OpenDSS behavior
-New PVSystem.PV1 phases=3 conn=wye bus1=B2.1.2.3.4 kv=0.4 kva=40 pf=1.0
+New PVSystem.PV1 phases=3 conn=wye bus1=B2.1.2.3.4 kv=0.4 kva=3 pf=1.0
 
 Set voltagebases=[0.4]
 Calcvoltagebases

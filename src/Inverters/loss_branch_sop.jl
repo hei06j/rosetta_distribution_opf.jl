@@ -1,8 +1,8 @@
-function add_sop_inverter_losses!(data_math, gen_id1, gen_id2; multiplexing=false)
+function add_sop_inverter_losses!(data_math, gen_id1, gen_id2; reconfigurable=false, dc_link=true)
 
     # ## add a branch for each inverter
-    # new_gen1_bus, new_branch_id1 = RPMD.add_inverter_losses!(data_math, gen_id1; multiplexing=multiplexing)
-    # new_gen2_bus, new_branch_id2 = RPMD.add_inverter_losses!(data_math, gen_id2; multiplexing=multiplexing)
+    # new_gen1_bus, new_branch_id1 = RPMD.add_inverter_losses!(data_math, gen_id1; reconfigurable=reconfigurable)
+    # new_gen2_bus, new_branch_id2 = RPMD.add_inverter_losses!(data_math, gen_id2; reconfigurable=reconfigurable)
 
     # @show new_gen1_bus, new_branch_id1
     # @show new_gen2_bus, new_branch_id2
@@ -59,10 +59,15 @@ function add_sop_inverter_losses!(data_math, gen_id1, gen_id2; multiplexing=fals
     c_rating_a = pmax / vbase_max / Ibase
     data_math["branch"]["$new_branch_id"]["c_rating_a"] = [c_rating_a ; c_rating_a[1]]
     
-    if multiplexing
-        data_math["branch"]["$new_branch_id"]["m_legs"] = 12
+    if reconfigurable
+        data_math["branch"]["$new_branch_id"]["m_legs"] = 8 # 12
     else
         data_math["branch"]["$new_branch_id"]["m_legs"] = 8
+    end
+
+    if dc_link 
+        data_math["branch"]["$new_branch_id"]["pdcmin"] = -Inf
+        data_math["branch"]["$new_branch_id"]["pdcmax"] = Inf
     end
 
     delete!(data_math["gen"], "$gen_id1")
@@ -81,7 +86,7 @@ function add_sop_inverter_losses!(data_math, gen_id1, gen_id2; multiplexing=fals
     #     # data_math["gen"]["$id"]["pmax"] *= 0
     #     # data_math["gen"]["$id"]["qmin"] *= 0
     #     # data_math["gen"]["$id"]["qmax"] *= 0
-    #     if multiplexing
+    #     if reconfigurable
     #         data_math["gen"]["$id"]["m_legs"] = 8
     #     end
     # end

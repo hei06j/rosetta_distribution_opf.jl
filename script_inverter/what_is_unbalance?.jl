@@ -129,7 +129,7 @@ function plot_phasors(phasor; Imax=1, labeled=false, I1=[], I2=[], I0=[])
     plt = Plots.plot([0,imag.(phasor[1])], [0,real.(phasor[1])], arrow=true, color=:blue, linewidth=3, linestyle=:solid, label="a", border=:none)
     Plots.plot!([0,imag.(phasor[2])], [0,real.(phasor[2])], arrow=true, color=:red, linewidth=3, linestyle=:solid, label="b", border=:none)
     Plots.plot!([0,imag.(phasor[3])], [0,real.(phasor[3])], arrow=true, color=:green, linewidth=3, linestyle=:solid, label="c", border=:none)
-    Plots.plot!([0,imag.(phasor[4])], [0,real.(phasor[4])], arrow=true, color=:black, linewidth=4, linestyle=:solid, label="n", border=:none)
+    Plots.plot!([0,imag.(phasor[4])], [0,real.(phasor[4])], arrow=true, color=:black, linewidth=3, linestyle=:solid, label="n", border=:none)
     Plots.plot!([0,0], [0,1.1*Imax], arrow=true, color=:grey, linestyle=:dot, label=false)
     Plots.plot!([0,1.1*Imax*real(exp(im*210/180*pi))], [0,1.1*Imax*imag(exp(im*210/180*pi))], arrow=true, color=:grey, linestyle=:dot, label=false)
     Plots.plot!([0,1.1*Imax*real(exp(im*330/180*pi))], [0,1.1*Imax*imag(exp(im*330/180*pi))], arrow=true, color=:grey, linestyle=:dot, label=false)
@@ -143,4 +143,5 @@ function plot_phasors(phasor; Imax=1, labeled=false, I1=[], I2=[], I0=[])
     annotate!([-0.8], [-Imax-0.2], text(latexstring("Zero Seq= $(round(I0, digits=2))"), :black, 20))
     return plt
 end
+
 plt = plot_phasors(I, labeled=true, I1=I1, I2=I2, I0=I0)
