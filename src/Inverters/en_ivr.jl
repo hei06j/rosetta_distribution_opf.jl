@@ -1,6 +1,95 @@
 # BRANCH - Constraints
 
 """
+	function constraint_mc_current_from(
+		pm::AbstractExplicitNeutralIVRModel,
+		nw::Int,
+		f_bus::Int,
+		f_idx::Tuple{Int,Int,Int},
+		f_connections::Vector{Int},
+		g_sh_fr::Matrix{<:Real},
+		b_sh_fr::Matrix{<:Real};
+		report::Bool=true
+	)
+
+For IVR models with explicit neutrals,
+defines how current distributes over series and shunt impedances of a pi-model branch.
+
+```
+cr_fr == csr_fr + g_sh_fr*vr_fr - b_sh_fr*vi_fr
+ci_fr == csi_fr + g_sh_fr*vi_fr + b_sh_fr*vr_fr
+```
+"""
+function constraint_mc_current_from(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, f_bus::Int, f_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, g_sh_fr::Matrix{<:Real}, b_sh_fr::Matrix{<:Real}; report::Bool=true)
+    vr_fr = [_PMD.var(pm, nw, :vr, f_bus)[c] for c in f_connections]
+    vi_fr = [_PMD.var(pm, nw, :vi, f_bus)[c] for c in f_connections]
+
+    cr_fr =  _PMD.var(pm, nw, :cr, f_idx)
+    ci_fr =  _PMD.var(pm, nw, :ci, f_idx)
+
+    csr_fr =  _PMD.var(pm, nw, :csr, f_idx[1])
+    csi_fr =  _PMD.var(pm, nw, :csi, f_idx[1])
+
+    # JuMP.@constraint(pm.model, cr_fr .== csr_fr + g_sh_fr*vr_fr - b_sh_fr*vi_fr)
+    # JuMP.@constraint(pm.model, ci_fr .== csi_fr + g_sh_fr*vi_fr + b_sh_fr*vr_fr)
+
+    _PMD.var(pm, nw, :cr_bus)[f_idx] = cr_bus_fr = _PMD._merge_bus_flows(pm, cr_fr, f_connections)
+    _PMD.var(pm, nw, :ci_bus)[f_idx] = ci_bus_fr = _PMD._merge_bus_flows(pm, ci_fr, f_connections)
+
+    if report
+        _PMD.sol(pm, nw, :branch, f_idx[1])[:pf] =  cr_fr.*vr_fr .+ ci_fr.*vi_fr
+        _PMD.sol(pm, nw, :branch, f_idx[1])[:qf] = -cr_fr.*vi_fr .+ ci_fr.*vr_fr
+    end
+
+end
+
+
+"""
+	function constraint_mc_current_to(
+		pm::AbstractExplicitNeutralIVRModel,
+		nw::Int,
+		t_bus,
+		f_idx::Tuple{Int,Int,Int},
+		t_idx::Tuple{Int,Int,Int},
+		f_connections::Vector{Int},
+		t_connections::Vector{Int},
+		g_sh_to::Matrix{<:Real},
+		b_sh_to::Matrix{<:Real};
+		report::Bool=true
+	)
+
+For IVR models with explicit neutrals,
+defines how current distributes over series and shunt impedances of a pi-model branch.
+
+```
+cr_to == csr_to + g_sh_to*vr_to - b_sh_to*vi_to
+ci_to == csi_to + g_sh_to*vi_to + b_sh_to*vr_to
+```
+"""
+function constraint_mc_current_to(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, t_bus, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, g_sh_to::Matrix{<:Real}, b_sh_to::Matrix{<:Real}; report::Bool=true)
+    vr_to = [_PMD.var(pm, nw, :vr, t_bus)[c] for c in t_connections]
+    vi_to = [_PMD.var(pm, nw, :vi, t_bus)[c] for c in t_connections]
+
+    cr_to = _PMD.var(pm, nw, :cr, t_idx)
+    ci_to = _PMD.var(pm, nw, :ci, t_idx)
+
+    csr_to = -_PMD.var(pm, nw, :csr, f_idx[1])
+    csi_to = -_PMD.var(pm, nw, :csi, f_idx[1])
+
+    # JuMP.@constraint(pm.model, cr_to .== csr_to + g_sh_to*vr_to - b_sh_to*vi_to)
+    # JuMP.@constraint(pm.model, ci_to .== csi_to + g_sh_to*vi_to + b_sh_to*vr_to)
+
+    _PMD.var(pm, nw, :cr_bus)[t_idx] = cr_bus_to = _PMD._merge_bus_flows(pm, cr_to, t_connections)
+    _PMD.var(pm, nw, :ci_bus)[t_idx] = ci_bus_to = _PMD._merge_bus_flows(pm, ci_to, t_connections)
+
+    if report
+        _PMD.sol(pm, nw, :branch, t_idx[1])[:pt] =  cr_to.*vr_to .+ ci_to.*vi_to
+        _PMD.sol(pm, nw, :branch, t_idx[1])[:qt] = -cr_to.*vi_to .+ ci_to.*vr_to
+    end
+end
+
+
+"""
 	function constraint_mc_branch_current_limit(
 		pm::AbstractExplicitNeutralIVRModel,
 		nw::Int,
@@ -95,6 +184,7 @@ function constraint_mc_thermal_limit_to(pm::_PMD.AbstractExplicitNeutralIVRModel
         end
     end
 end
+
 
 
 

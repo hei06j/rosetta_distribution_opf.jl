@@ -15,7 +15,55 @@ function variable_reconfigurable_sop_inverter(pm::_PMD.AbstractUnbalancedPowerMo
 end
 
 
-function constraint_sop_branch(pm::_PMD.ExplicitNeutralModels, id::Int; nw::Int=_PMD.nw_id_default, bounded::Bool=true, report::Bool=true)
+function constraint_sop_branch_current_limit(pm::_PMD.ExplicitNeutralModels, id::Int; nw::Int=_PMD.nw_id_default, bounded::Bool=true, report::Bool=true)
+    branch = _PMD.ref(pm, nw, :branch, id)
+    f_idx = (id, branch["f_bus"], branch["t_bus"])
+    t_idx = (id, branch["t_bus"], branch["f_bus"])
+    constraint_sop_branch_current_limit(pm, nw, id, f_idx, t_idx, branch["f_connections"], branch["t_connections"], branch["c_rating_a"], branch["m_legs"])
+end
+
+
+function constraint_sop_branch_current_limit(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, branch_id, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections, t_connections, c_rating_a::Vector{<:Real}, m_legs; report::Bool=true)
+    ### constraint_mc_branch_current_limit
+    bg = _PMD.var(pm, nw, :bg, branch_id)
+    alpha_g = 1/m_legs * ones(m_legs)
+    @assert size(bg,1) == length(f_connections) + length(t_connections)
+    @assert size(bg,1) <= size(bg,2)
+
+    cr_fr = _PMD.var(pm, nw, :cr, f_idx)
+    ci_fr = _PMD.var(pm, nw, :ci, f_idx)
+    cr_to = _PMD.var(pm, nw, :cr, t_idx)
+    ci_to = _PMD.var(pm, nw, :ci, t_idx)
+
+    # c_rating = _PMD.var(pm, nw, :c_rating, branch_id)
+    # @assert size(c_rating,1) == length(f_connections) + length(t_connections)
+
+    JuMP.@constraint(pm.model, [k in 1:size(bg,2)], sum(bg[:,k]) == 1)
+    JuMP.@constraint(pm.model, [l in 1:size(bg,1)], sum(bg[l,:]) >= 1)
+
+    c_rating = Vector{JuMP.AffExpr}([])
+
+    for idx in collect(1:size(bg,1))
+        push!(c_rating, JuMP.@expression(pm.model,  sum(c_rating_a) * sum(bg[idx,k]*alpha_g[k] for k in collect(1:length(alpha_g))) ))
+    end
+
+    JuMP.@constraint(pm.model, [c in 1:length(f_connections)], cr_fr[c]^2+ci_fr[c]^2 <= c_rating[c]^2)
+    JuMP.@constraint(pm.model, [c in 1:length(t_connections)], cr_to[c]^2+ci_to[c]^2 <= c_rating[c+length(f_connections)]^2)
+
+    _PMD.var(pm, nw, :c_rating)[branch_id] = c_rating
+    if report
+        _PMD.sol(pm, nw, :branch, branch_id)[:c_rating] = c_rating
+    end
+
+    # c_rating = JuMP.@expression(pm.model, sum(c_rating) .* Array(bg) * alpha_g)
+    # c_rating_fr = c_rating[1:length(f_connections)]
+    # c_rating_to = c_rating[length(f_connections)+1:length(c_rating)]
+    # JuMP.@constraint(pm.model, [c in 1:length(f_connections)], cr_fr[c]^2+ci_fr[c]^2 <= c_rating_fr[c]^2)
+    # JuMP.@constraint(pm.model, [c in 1:length(t_connections)], cr_to[c]^2+ci_to[c]^2 <= c_rating_to[c]^2)
+end
+
+
+function constraint_sop_branch_balance(pm::_PMD.ExplicitNeutralModels, id::Int; nw::Int=_PMD.nw_id_default, bounded::Bool=true, report::Bool=true)
     branch = _PMD.ref(pm, nw, :branch, id)
     f_idx = (id, branch["f_bus"], branch["t_bus"])
     t_idx = (id, branch["t_bus"], branch["f_bus"])
@@ -23,11 +71,10 @@ function constraint_sop_branch(pm::_PMD.ExplicitNeutralModels, id::Int; nw::Int=
     # x = 0
     # c_rating = 3 * 0.0033  # minimum(pmax1, pmax2)
     # m_legs = branch["m_legs"]
-    constraint_sop_branch(pm, nw, id, f_idx, t_idx, branch["g_fr"], branch["g_to"], branch["b_fr"], branch["b_to"], branch["br_r"], branch["br_x"], branch["f_connections"], branch["t_connections"], branch["c_rating_a"], branch["m_legs"])
+    constraint_sop_branch_balance(pm, nw, id, f_idx, t_idx, branch["f_connections"], branch["t_connections"], branch["c_rating_a"], branch["m_legs"])
 end
 
-
-function constraint_sop_branch(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, branch_id, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, g_fr, g_to, b_fr, b_to, r, x, f_connections, t_connections, c_rating_a::Vector{<:Real}, m_legs; report::Bool=true)
+function constraint_sop_branch_balance(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, branch_id, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections, t_connections, c_rating_a::Vector{<:Real}, m_legs; report::Bool=true)
     # pg1_sum = JuMP.@expression(pm.model, sum(pgi for pgi in _PMD.var(pm, 0, :pg, 1)))
     # pg2_sum = JuMP.@expression(pm.model, sum(pgi for pgi in _PMD.var(pm, 0, :pg, 2)))
     # Rin_pu = 0.015 / (230.94^2 / 1000)
@@ -48,39 +95,7 @@ function constraint_sop_branch(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int
     vi_fr = [_PMD.var(pm, nw, :vi, f_idx[2])[t] for t in f_connections]
     vr_to = [_PMD.var(pm, nw, :vr, t_idx[2])[t] for t in t_connections]
     vi_to = [_PMD.var(pm, nw, :vi, t_idx[2])[t] for t in t_connections]
-
-    ### constraint_mc_branch_current_limit
-    bg = _PMD.var(pm, nw, :bg, branch_id)
-    alpha_g = 1/m_legs * ones(m_legs)
-    @assert size(bg,1) == length(f_connections) + length(t_connections)
-    @assert size(bg,1) <= size(bg,2)
-
-    # c_rating = _PMD.var(pm, nw, :c_rating, branch_id)
-    # @assert size(c_rating,1) == length(f_connections) + length(t_connections)
-
-    JuMP.@constraint(pm.model, [k in 1:size(bg,2)], sum(bg[:,k]) == 1)
-    JuMP.@constraint(pm.model, [l in 1:size(bg,1)], sum(bg[l,:]) >= 1)
-
-    # c_rating = JuMP.@expression(pm.model, sum(c_rating) .* Array(bg) * alpha_g)
-    # c_rating_fr = c_rating[1:length(f_connections)]
-    # c_rating_to = c_rating[length(f_connections)+1:length(c_rating)]
-    # JuMP.@constraint(pm.model, [c in 1:length(f_connections)], cr_fr[c]^2+ci_fr[c]^2 <= c_rating_fr[c]^2)
-    # JuMP.@constraint(pm.model, [c in 1:length(t_connections)], cr_to[c]^2+ci_to[c]^2 <= c_rating_to[c]^2)
     
-    c_rating = Vector{JuMP.AffExpr}([])
-
-    for idx in collect(1:size(bg,1))
-        push!(c_rating, JuMP.@expression(pm.model,  sum(c_rating_a) * sum(bg[idx,k]*alpha_g[k] for k in collect(1:length(alpha_g))) ))
-    end
-
-    _PMD.var(pm, nw, :c_rating)[branch_id] = c_rating
-    if report
-        _PMD.sol(pm, nw, :branch, branch_id)[:c_rating] = c_rating
-    end
-
-    JuMP.@constraint(pm.model, [c in 1:length(f_connections)], cr_fr[c]^2+ci_fr[c]^2 <= c_rating[c]^2)
-    JuMP.@constraint(pm.model, [c in 1:length(t_connections)], cr_to[c]^2+ci_to[c]^2 <= c_rating[c+length(f_connections)]^2)
-
     ### constraint sum(csr_fr) + sum(csr_to) = 0,   sum(csi_fr) + sum(csi_to) = 0
     JuMP.@constraint(pm.model, sum(cr_fr) + sum(cr_to) == 0)
     JuMP.@constraint(pm.model, sum(ci_fr) + sum(ci_to) == 0)
@@ -90,11 +105,10 @@ function constraint_sop_branch(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int
     _PMD.var(pm, 0)[:pf_idx] = Dict{Int, Any}()
     _PMD.var(pm, 0)[:pt_idx] = Dict{Int, Any}()
 
-
     pf_idx = JuMP.@expression(pm.model,  vr_fr .* cr_fr .+ vi_fr .* ci_fr)
     pt_idx = JuMP.@expression(pm.model,  vr_to .* cr_to .+ vi_to .* ci_to)
     JuMP.@constraint(pm.model, sum(pf_idx) + sum(pt_idx) == 0)
-
+    
     _PMD.var(pm, nw, :pf_idx)[branch_id] = pf_idx
     _PMD.var(pm, nw, :pt_idx)[branch_id] = pt_idx
     if report
@@ -255,27 +269,29 @@ function build_mc_opf_mx_sop(pm::_PMD.AbstractExplicitNeutralIVRModel)
         if i ∈ sop_branches
 
             if pm.setting["reconfigurable"]
-                _PMD.constraint_mc_current_from(pm, i)
-                _PMD.constraint_mc_current_to(pm, i)
+                constraint_mc_current_from(pm, i)
+                constraint_mc_current_to(pm, i)
                 # _PMD.constraint_mc_bus_voltage_drop(pm, i)
-                constraint_sop_branch(pm, i)
+                constraint_sop_branch_current_limit(pm, i)
+                constraint_sop_branch_balance(pm, i)
 
             elseif pm.setting["ideal"]
-                _PMD.constraint_mc_current_from(pm, i)
-                _PMD.constraint_mc_current_to(pm, i)
+                constraint_mc_current_from(pm, i)
+                constraint_mc_current_to(pm, i)
                 # _PMD.constraint_mc_bus_voltage_drop(pm, i)
                 constraint_mc_branch_current_limit(pm, i)
+                constraint_sop_branch_balance(pm, i)
                 _PMD.constraint_mc_thermal_limit_from(pm, i)
                 _PMD.constraint_mc_thermal_limit_to(pm, i)
 
             elseif pm.setting["conventional"]
-                _PMD.constraint_mc_current_from(pm, i)
-                _PMD.constraint_mc_current_to(pm, i)
+                constraint_mc_current_from(pm, i)
+                constraint_mc_current_to(pm, i)
                 # _PMD.constraint_mc_bus_voltage_drop(pm, i)
                 _PMD.constraint_mc_branch_current_limit(pm, i)
+                constraint_sop_branch_balance(pm, i)
                 _PMD.constraint_mc_thermal_limit_from(pm, i)
                 _PMD.constraint_mc_thermal_limit_to(pm, i)
-
             end
 
             if pm.setting["dc_link"]

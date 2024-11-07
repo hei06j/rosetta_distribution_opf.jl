@@ -145,7 +145,7 @@ result_mx["solution"]["branch"]["$sop_branch_id"]["pdc_link"]
 round.(result_mx["solution"]["branch"]["$sop_branch_id"]["bg"])
 result_conv["solution"]["branch"]["$sop_branch_id"]["cr_fr"]
 result_conv["solution"]["branch"]["$sop_branch_id"]["cr_to"]
-result_conv["solution"]["branch"]["$sop_branch_id"]["cr_fr"] .+ result_conv["solution"]["branch"]["$sop_branch_id"]["cr_to"]
+result_mx["solution"]["branch"]["$sop_branch_id"]["cr_fr"] .+ result_mx["solution"]["branch"]["$sop_branch_id"]["cr_to"]
 
 result_mx["solution"]["branch"]["$sop_branch_id"]["pf_idx"]
 result_mx["solution"]["branch"]["$sop_branch_id"]["pf"]

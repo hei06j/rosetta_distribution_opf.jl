@@ -2,6 +2,45 @@
 # BRANCH - Constraints
 
 """
+    constraint_mc_current_from(pm::AbstractUnbalancedIVRModel, i::Int; nw::Int=nw_id_default)::Nothing
+
+Template function for current constraints on branches (from-side)
+"""
+function constraint_mc_current_from(pm::_PMD.AbstractUnbalancedIVRModel, i::Int; nw::Int=_PMD.nw_id_default)::Nothing
+    branch = _PMD.ref(pm, nw, :branch, i)
+    f_bus = branch["f_bus"]
+    t_bus = branch["t_bus"]
+    f_idx = (i, f_bus, t_bus)
+
+    g_fr = branch["g_fr"]
+    b_fr = branch["b_fr"]
+
+    constraint_mc_current_from(pm, nw, f_bus, f_idx, branch["f_connections"], g_fr, b_fr)
+    nothing
+end
+
+
+"""
+    constraint_mc_current_to(pm::AbstractUnbalancedIVRModel, i::Int; nw::Int=nw_id_default)::Nothing
+
+Template function for current constraints on branches (to-side)
+"""
+function constraint_mc_current_to(pm::_PMD.AbstractUnbalancedIVRModel, i::Int; nw::Int=_PMD.nw_id_default)::Nothing
+    branch = _PMD.ref(pm, nw, :branch, i)
+    f_bus = branch["f_bus"]
+    t_bus = branch["t_bus"]
+    f_idx = (i, f_bus, t_bus)
+    t_idx = (i, t_bus, f_bus)
+
+    g_to = branch["g_to"]
+    b_to = branch["b_to"]
+
+    constraint_mc_current_to(pm, nw, t_bus, f_idx, t_idx, branch["f_connections"], branch["t_connections"], g_to, b_to)
+    nothing
+end
+
+
+"""
 	function constraint_mc_branch_current_limit(
 		pm::ExplicitNeutralModels,
 		id::Int;

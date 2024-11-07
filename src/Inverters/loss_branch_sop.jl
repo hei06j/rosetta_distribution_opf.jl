@@ -60,7 +60,7 @@ function add_sop_inverter_losses!(data_math, gen_id1, gen_id2; reconfigurable=fa
     data_math["branch"]["$new_branch_id"]["c_rating_a"] = [c_rating_a ; c_rating_a[1]]
     
     if reconfigurable
-        data_math["branch"]["$new_branch_id"]["m_legs"] = 8 # 12
+        data_math["branch"]["$new_branch_id"]["m_legs"] = 12
     else
         data_math["branch"]["$new_branch_id"]["m_legs"] = 8
     end
