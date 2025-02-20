@@ -20,25 +20,25 @@ cr_fr == csr_fr + g_sh_fr*vr_fr - b_sh_fr*vi_fr
 ci_fr == csi_fr + g_sh_fr*vi_fr + b_sh_fr*vr_fr
 ```
 """
-function constraint_mc_current_from(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, f_bus::Int, f_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, g_sh_fr::Matrix{<:Real}, b_sh_fr::Matrix{<:Real}; report::Bool=true)
-    vr_fr = [_PMD.var(pm, nw, :vr, f_bus)[c] for c in f_connections]
-    vi_fr = [_PMD.var(pm, nw, :vi, f_bus)[c] for c in f_connections]
+function constraint_mc_current_from(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, f_bus::Int, f_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, g_sh_fr::Matrix{<:Real}, b_sh_fr::Matrix{<:Real}; report::Bool=true)
+    vr_fr = [PMD.var(pm, nw, :vr, f_bus)[c] for c in f_connections]
+    vi_fr = [PMD.var(pm, nw, :vi, f_bus)[c] for c in f_connections]
 
-    cr_fr =  _PMD.var(pm, nw, :cr, f_idx)
-    ci_fr =  _PMD.var(pm, nw, :ci, f_idx)
+    cr_fr =  PMD.var(pm, nw, :cr, f_idx)
+    ci_fr =  PMD.var(pm, nw, :ci, f_idx)
 
-    csr_fr =  _PMD.var(pm, nw, :csr, f_idx[1])
-    csi_fr =  _PMD.var(pm, nw, :csi, f_idx[1])
+    csr_fr =  PMD.var(pm, nw, :csr, f_idx[1])
+    csi_fr =  PMD.var(pm, nw, :csi, f_idx[1])
 
     # JuMP.@constraint(pm.model, cr_fr .== csr_fr + g_sh_fr*vr_fr - b_sh_fr*vi_fr)
     # JuMP.@constraint(pm.model, ci_fr .== csi_fr + g_sh_fr*vi_fr + b_sh_fr*vr_fr)
 
-    _PMD.var(pm, nw, :cr_bus)[f_idx] = cr_bus_fr = _PMD._merge_bus_flows(pm, cr_fr, f_connections)
-    _PMD.var(pm, nw, :ci_bus)[f_idx] = ci_bus_fr = _PMD._merge_bus_flows(pm, ci_fr, f_connections)
+    PMD.var(pm, nw, :cr_bus)[f_idx] = cr_bus_fr = PMD._merge_bus_flows(pm, cr_fr, f_connections)
+    PMD.var(pm, nw, :ci_bus)[f_idx] = ci_bus_fr = PMD._merge_bus_flows(pm, ci_fr, f_connections)
 
     if report
-        _PMD.sol(pm, nw, :branch, f_idx[1])[:pf] =  cr_fr.*vr_fr .+ ci_fr.*vi_fr
-        _PMD.sol(pm, nw, :branch, f_idx[1])[:qf] = -cr_fr.*vi_fr .+ ci_fr.*vr_fr
+        PMD.sol(pm, nw, :branch, f_idx[1])[:pf] =  cr_fr.*vr_fr .+ ci_fr.*vi_fr
+        PMD.sol(pm, nw, :branch, f_idx[1])[:qf] = -cr_fr.*vi_fr .+ ci_fr.*vr_fr
     end
 
 end
@@ -66,25 +66,25 @@ cr_to == csr_to + g_sh_to*vr_to - b_sh_to*vi_to
 ci_to == csi_to + g_sh_to*vi_to + b_sh_to*vr_to
 ```
 """
-function constraint_mc_current_to(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, t_bus, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, g_sh_to::Matrix{<:Real}, b_sh_to::Matrix{<:Real}; report::Bool=true)
-    vr_to = [_PMD.var(pm, nw, :vr, t_bus)[c] for c in t_connections]
-    vi_to = [_PMD.var(pm, nw, :vi, t_bus)[c] for c in t_connections]
+function constraint_mc_current_to(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, t_bus, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, g_sh_to::Matrix{<:Real}, b_sh_to::Matrix{<:Real}; report::Bool=true)
+    vr_to = [PMD.var(pm, nw, :vr, t_bus)[c] for c in t_connections]
+    vi_to = [PMD.var(pm, nw, :vi, t_bus)[c] for c in t_connections]
 
-    cr_to = _PMD.var(pm, nw, :cr, t_idx)
-    ci_to = _PMD.var(pm, nw, :ci, t_idx)
+    cr_to = PMD.var(pm, nw, :cr, t_idx)
+    ci_to = PMD.var(pm, nw, :ci, t_idx)
 
-    csr_to = -_PMD.var(pm, nw, :csr, f_idx[1])
-    csi_to = -_PMD.var(pm, nw, :csi, f_idx[1])
+    csr_to = -PMD.var(pm, nw, :csr, f_idx[1])
+    csi_to = -PMD.var(pm, nw, :csi, f_idx[1])
 
     # JuMP.@constraint(pm.model, cr_to .== csr_to + g_sh_to*vr_to - b_sh_to*vi_to)
     # JuMP.@constraint(pm.model, ci_to .== csi_to + g_sh_to*vi_to + b_sh_to*vr_to)
 
-    _PMD.var(pm, nw, :cr_bus)[t_idx] = cr_bus_to = _PMD._merge_bus_flows(pm, cr_to, t_connections)
-    _PMD.var(pm, nw, :ci_bus)[t_idx] = ci_bus_to = _PMD._merge_bus_flows(pm, ci_to, t_connections)
+    PMD.var(pm, nw, :cr_bus)[t_idx] = cr_bus_to = PMD._merge_bus_flows(pm, cr_to, t_connections)
+    PMD.var(pm, nw, :ci_bus)[t_idx] = ci_bus_to = PMD._merge_bus_flows(pm, ci_to, t_connections)
 
     if report
-        _PMD.sol(pm, nw, :branch, t_idx[1])[:pt] =  cr_to.*vr_to .+ ci_to.*vi_to
-        _PMD.sol(pm, nw, :branch, t_idx[1])[:qt] = -cr_to.*vi_to .+ ci_to.*vr_to
+        PMD.sol(pm, nw, :branch, t_idx[1])[:pt] =  cr_to.*vr_to .+ ci_to.*vi_to
+        PMD.sol(pm, nw, :branch, t_idx[1])[:qt] = -cr_to.*vi_to .+ ci_to.*vr_to
     end
 end
 
@@ -110,11 +110,11 @@ cr_fr^2 + ci_fr^2 <= c_rating^2
 cr_to^2 + ci_to^2 <= c_rating^2
 ```
 """
-function constraint_mc_branch_current_limit(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector, t_connections::Vector, c_rating::Vector{<:Real}; report::Bool=true)
-    cr_fr = _PMD.var(pm, nw, :cr, f_idx)
-    ci_fr = _PMD.var(pm, nw, :ci, f_idx)
-    cr_to = _PMD.var(pm, nw, :cr, t_idx)
-    ci_to = _PMD.var(pm, nw, :ci, t_idx)
+function constraint_mc_branch_current_limit(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector, t_connections::Vector, c_rating::Vector{<:Real}; report::Bool=true)
+    cr_fr = PMD.var(pm, nw, :cr, f_idx)
+    ci_fr = PMD.var(pm, nw, :ci, f_idx)
+    cr_to = PMD.var(pm, nw, :cr, t_idx)
+    ci_to = PMD.var(pm, nw, :ci, t_idx)
 
     cnds_finite_rating = [c for (c,r) in enumerate(c_rating) if r<Inf]
     # JuMP.@constraint(pm.model, [c in cnds_finite_rating], cr_fr[c]^2+ci_fr[c]^2 <= c_rating[c]^2)
@@ -138,11 +138,11 @@ end
 For IVR models with explicit neutrals,
 imposes a bound on the from-side line power magnitude.
 """
-function constraint_mc_thermal_limit_from(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, f_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, rate_a::Vector{<:Real})
-    vr_fr = [_PMD.var(pm, nw, :vr, f_idx[1])[t] for t in f_connections]
-    vi_fr = [_PMD.var(pm, nw, :vi, f_idx[1])[t] for t in f_connections]
-    cr_fr = _PMD.var(pm, nw, :cr, f_idx)
-    ci_fr = _PMD.var(pm, nw, :ci, f_idx)
+function constraint_mc_thermal_limit_from(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, f_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, rate_a::Vector{<:Real})
+    vr_fr = [PMD.var(pm, nw, :vr, f_idx[1])[t] for t in f_connections]
+    vi_fr = [PMD.var(pm, nw, :vi, f_idx[1])[t] for t in f_connections]
+    cr_fr = PMD.var(pm, nw, :cr, f_idx)
+    ci_fr = PMD.var(pm, nw, :ci, f_idx)
 
     for idx in 1:length(rate_a)
         if rate_a[idx]<Inf
@@ -168,11 +168,11 @@ end
 For IVR models with explicit neutrals,
 imposes a bound on the to-side line power magnitude.
 """
-function constraint_mc_thermal_limit_to(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, t_idx::Tuple{Int,Int,Int}, t_connections::Vector{Int}, rate_a::Vector{<:Real})
-    vr_to = [_PMD.var(pm, nw, :vr, t_idx[1])[t] for t in t_connections]
-    vi_to = [_PMD.var(pm, nw, :vi, t_idx[1])[t] for t in t_connections]
-    cr_to = _PMD.var(pm, nw, :cr, t_idx)
-    ci_to = _PMD.var(pm, nw, :ci, t_idx)
+function constraint_mc_thermal_limit_to(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, t_idx::Tuple{Int,Int,Int}, t_connections::Vector{Int}, rate_a::Vector{<:Real})
+    vr_to = [PMD.var(pm, nw, :vr, t_idx[1])[t] for t in t_connections]
+    vi_to = [PMD.var(pm, nw, :vi, t_idx[1])[t] for t in t_connections]
+    cr_to = PMD.var(pm, nw, :cr, t_idx)
+    ci_to = PMD.var(pm, nw, :ci, t_idx)
 
     for idx in 1:length(rate_a)
         if rate_a[idx]<Inf
@@ -208,11 +208,11 @@ For IVR models with explicit neutrals,
 creates non-linear expressions for the generator power `:pd` and `:qd`
 of wye-connected generators as a function of voltage and current
 """
-function constraint_mc_generator_power_wye(pm::_PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, pmin::Vector{<:Real}, pmax::Vector{<:Real}, qmin::Vector{<:Real}, qmax::Vector{<:Real}; report::Bool=true)
-    vr = _PMD.var(pm, nw, :vr, bus_id)
-    vi = _PMD.var(pm, nw, :vi, bus_id)
-    crg = _PMD.var(pm, nw, :crg, id)
-    cig = _PMD.var(pm, nw, :cig, id)
+function constraint_mc_generator_power_wye(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, pmin::Vector{<:Real}, pmax::Vector{<:Real}, qmin::Vector{<:Real}, qmax::Vector{<:Real}; report::Bool=true)
+    vr = PMD.var(pm, nw, :vr, bus_id)
+    vi = PMD.var(pm, nw, :vi, bus_id)
+    crg = PMD.var(pm, nw, :crg, id)
+    cig = PMD.var(pm, nw, :cig, id)
 
     phases = connections[1:end-1]
     n      = connections[end]
@@ -221,31 +221,36 @@ function constraint_mc_generator_power_wye(pm::_PMD.AbstractNLExplicitNeutralIVR
     qg = JuMP.NonlinearExpr[]
 
     for (idx, p) in enumerate(phases)
-        push!(pg, JuMP.@expression(pm.model,  (vr[p]-vr[n])*crg[idx]+(vi[p]-vi[n])*cig[idx]))
-        push!(qg, JuMP.@expression(pm.model, -(vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx]))
+        push!(pg, JuMP.@expression(pm.model,   (vr[p]-vr[n])*crg[idx]  + (vi[p]-vi[n])*cig[idx]))
+        push!(qg, JuMP.@expression(pm.model, - (vr[p]-vr[n])*cig[idx]  + (vi[p]-vi[n])*crg[idx]))
     end
 
-    for (idx, p) in enumerate(phases)
-        if pmin[idx]>-Inf
-            JuMP.@constraint(pm.model, pmin[idx] .<= (vr[p]-vr[n])*crg[idx]  + (vi[p]-vi[n])*cig[idx])
-        end
-        if pmax[idx]< Inf
-            JuMP.@constraint(pm.model, pmax[idx] .>= (vr[p]-vr[n])*crg[idx]  + (vi[p]-vi[n])*cig[idx])
-        end
-        if qmin[idx]>-Inf
-            JuMP.@constraint(pm.model, qmin[idx] .<= (vi[p]-vi[n])*crg[idx]  - (vr[p]-vr[n])*cig[idx])
-        end
-        if qmax[idx]< Inf
-            JuMP.@constraint(pm.model, qmax[idx] .>= (vi[p]-vi[n])*crg[idx]  - (vr[p]-vr[n])*cig[idx])
-        end
-    end
+    JuMP.@constraint(pm.model, sum(pmin) <= sum(pg))
+    JuMP.@constraint(pm.model, sum(pmax) >= sum(pg))
+    JuMP.@constraint(pm.model, sum(qmin) <= sum(qg))
+    JuMP.@constraint(pm.model, sum(qmax) >= sum(qg))
 
-    _PMD.var(pm, nw, :pg)[id] = pg
-    _PMD.var(pm, nw, :qg)[id] = qg
+    # for (idx, p) in enumerate(phases)
+    #     if pmin[idx]>-Inf
+    #         JuMP.@constraint(pm.model, pmin[idx] .<= (vr[p]-vr[n])*crg[idx]  + (vi[p]-vi[n])*cig[idx])
+    #     end
+    #     if pmax[idx]< Inf
+    #         JuMP.@constraint(pm.model, pmax[idx] .>= (vr[p]-vr[n])*crg[idx]  + (vi[p]-vi[n])*cig[idx])
+    #     end
+    #     if qmin[idx]>-Inf
+    #         JuMP.@constraint(pm.model, qmin[idx] .<= (vi[p]-vi[n])*crg[idx]  - (vr[p]-vr[n])*cig[idx])
+    #     end
+    #     if qmax[idx]< Inf
+    #         JuMP.@constraint(pm.model, qmax[idx] .>= (vi[p]-vi[n])*crg[idx]  - (vr[p]-vr[n])*cig[idx])
+    #     end
+    # end
+
+    PMD.var(pm, nw, :pg)[id] = pg
+    PMD.var(pm, nw, :qg)[id] = qg
 
     if report
-        _PMD.sol(pm, nw, :gen, id)[:pg] = pg
-        _PMD.sol(pm, nw, :gen, id)[:qg] = qg
+        PMD.sol(pm, nw, :gen, id)[:pg] = pg
+        PMD.sol(pm, nw, :gen, id)[:qg] = qg
     end
 end
 
@@ -268,11 +273,12 @@ For IVR models with explicit neutrals,
 creates non-linear expressions for the generator power `:pd` and `:qd`
 of delta-connected generators as a function of voltage and current
 """
-function constraint_mc_generator_power_delta(pm::_PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, pmin::Vector{<:Real}, pmax::Vector{<:Real}, qmin::Vector{<:Real}, qmax::Vector{<:Real}; report::Bool=true)
-    vr = _PMD.var(pm, nw, :vr, bus_id)
-    vi = _PMD.var(pm, nw, :vi, bus_id)
-    crg = _PMD.var(pm, nw, :crg, id)
-    cig = _PMD.var(pm, nw, :cig, id)
+### TODO update to have pg and qg limits, similar to wye case above
+function constraint_mc_generator_power_delta(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, pmin::Vector{<:Real}, pmax::Vector{<:Real}, qmin::Vector{<:Real}, qmax::Vector{<:Real}; report::Bool=true)
+    vr = PMD.var(pm, nw, :vr, bus_id)
+    vi = PMD.var(pm, nw, :vi, bus_id)
+    crg = PMD.var(pm, nw, :crg, id)
+    cig = PMD.var(pm, nw, :cig, id)
 
     nph = length(pmin)
 
@@ -296,12 +302,268 @@ function constraint_mc_generator_power_delta(pm::_PMD.AbstractNLExplicitNeutralI
     JuMP.@constraint(pm.model, [i in 1:nph], qmin[i] <= qg[i])
     JuMP.@constraint(pm.model, [i in 1:nph], qmax[i] >= qg[i])
 
-    _PMD.var(pm, nw, :pg)[id] = JuMP.Containers.DenseAxisArray(pg, connections)
-    _PMD.var(pm, nw, :qg)[id] = JuMP.Containers.DenseAxisArray(qg, connections)
+    PMD.var(pm, nw, :pg)[id] = JuMP.Containers.DenseAxisArray(pg, connections)
+    PMD.var(pm, nw, :qg)[id] = JuMP.Containers.DenseAxisArray(qg, connections)
 
     if report
-        _PMD.sol(pm, nw, :gen, id)[:pg] = pg
-        _PMD.sol(pm, nw, :gen, id)[:qg] = qg
+        PMD.sol(pm, nw, :gen, id)[:pg] = pg
+        PMD.sol(pm, nw, :gen, id)[:qg] = qg
+    end
+end
+
+
+"""
+	function constraint_mc_generator_current_wye(
+		pm::AbstractExplicitNeutralIVRModel,
+		nw::Int,
+		id::Int,
+		connections::Vector{Int};
+		report::Bool=true,
+		bounded::Bool=true
+	)
+
+For IVR models with explicit neutrals,
+creates expressions for the terminal current flows `:crg_bus` and `:cig_bus` of wye-connected generators
+"""
+function constraint_mc_generator_current_limit(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, id::Int, connections::Vector{Int}, c_rating::Vector{<:Real}; report::Bool=true, bounded::Bool=true)
+    # crg = PMD.var(pm, nw, :crg, id)
+    # cig = PMD.var(pm, nw, :cig, id)
+
+    crg_bus = PMD.var(pm, nw, :crg_bus)[id]
+    cig_bus = PMD.var(pm, nw, :cig_bus)[id]
+    
+    # PMD.var(pm, nw, :crg_bus)[id] = crg_bus = PMD._merge_bus_flows(pm, [crg..., -sum(crg)], connections)
+    # PMD.var(pm, nw, :cig_bus)[id] = cig_bus = PMD._merge_bus_flows(pm, [cig..., -sum(cig)], connections)
+    # JuMP.@constraint(pm.model, sum(PMD.var(pm, nw, :crg_bus)[id]) == 0)
+    # JuMP.@constraint(pm.model, sum(PMD.var(pm, nw, :cig_bus)[id]) == 0)
+
+    @assert length(c_rating) == length(crg_bus)
+    cnds_finite_nonzero_rating = [c for (c,r) in enumerate(c_rating) if (r<Inf && r!==0)]
+    cnds_zero_rating = [c for (c,r) in enumerate(c_rating) if r==0]
+
+    # JuMP.@constraint(pm.model, [c in cnds_finite_rating], crg[c]^2+cig[c]^2 <= c_rating[c]^2)
+    JuMP.@constraint(pm.model, [c in cnds_finite_nonzero_rating], crg_bus[c]^2+cig_bus[c]^2 <= c_rating[c]^2)
+    JuMP.@constraint(pm.model, [c in cnds_zero_rating], crg_bus[c] == 0)
+    JuMP.@constraint(pm.model, [c in cnds_zero_rating], cig_bus[c] == 0)
+end
+
+
+"""
+	function constraint_mc_generator_current_wye(
+		pm::AbstractExplicitNeutralIVRModel,
+		nw::Int,
+		id::Int,
+		connections::Vector{Int};
+		report::Bool=true,
+		bounded::Bool=true
+	)
+
+For IVR models with explicit neutrals,
+creates expressions for the terminal current flows `:crg_bus` and `:cig_bus` of wye-connected generators
+"""
+function constraint_mc_generator_current_wye(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, id::Int, connections::Vector{Int}; report::Bool=true, bounded::Bool=true)
+    crg = PMD.var(pm, nw, :crg, id)
+    cig = PMD.var(pm, nw, :cig, id)
+    PMD.var(pm, nw, :crg_bus)[id] = PMD._merge_bus_flows(pm, [crg..., -sum(crg)], connections)
+    PMD.var(pm, nw, :cig_bus)[id] = PMD._merge_bus_flows(pm, [cig..., -sum(cig)], connections)
+
+    JuMP.@constraint(pm.model, sum(PMD.var(pm, nw, :crg_bus)[id]) == 0)
+    JuMP.@constraint(pm.model, sum(PMD.var(pm, nw, :cig_bus)[id]) == 0)
+end
+
+
+"""
+	function constraint_mc_generator_current_delta(
+		pm::AbstractExplicitNeutralIVRModel,
+		nw::Int,
+		id::Int,
+		connections::Vector{Int};
+		report::Bool=true,
+		bounded::Bool=true
+	)
+
+For IVR models with explicit neutrals,
+creates expressions for the terminal current flows `:crg_bus` and `:cig_bus` of delta-connected generators
+"""
+function constraint_mc_generator_current_delta(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, id::Int, connections::Vector{Int}; report::Bool=true, bounded::Bool=true)
+    crg = PMD.var(pm, nw, :crg, id)
+    cig = PMD.var(pm, nw, :cig, id)
+    Md = _PMD.get_delta_transformation_matrix(length(connections))
+    PMD.var(pm, nw, :crg_bus)[id] = PMD._merge_bus_flows(pm, Md'*crg, connections)
+    PMD.var(pm, nw, :cig_bus)[id] = PMD._merge_bus_flows(pm, Md'*cig, connections)
+end
+
+
+# function constraint_mc_load_current_wye_magnitude(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, a::Vector{<:Real}, alpha::Vector{<:Real}, b::Vector{<:Real}, beta::Vector{<:Real}; report::Bool=true)
+function constraint_mc_load_current_wye_magnitude(pm::PMD.AbstractExplicitNeutralIVRModel, id::Int; nw::Int=PMD.nw_id_default, report::Bool=true)
+    load = PMD.ref(pm, nw, :load, id)
+    bus = PMD.ref(pm, nw,:bus, load["load_bus"])
+    load_current = load["cm"]
+    connections = load["connections"]
+    phases = connections[1:end-1]
+
+    ccmd = JuMP.NonlinearExpr[]
+    crd = PMD.var(pm, nw, :crd)[id]
+    cid = PMD.var(pm, nw, :cid)[id]
+
+    for (idx,c) in enumerate(phases)
+        push!(ccmd, JuMP.@expression(pm.model,  crd[idx]^2 + cid[idx]^2))
+        JuMP.@constraint(pm.model, crd[idx]^2 + cid[idx]^2 == load_current[idx]^2)
+    end
+    PMD.sol(pm, nw, :load, id)[:ccmd] = JuMP.Containers.DenseAxisArray(ccmd, phases)
+end
+
+"""
+	function constraint_mc_load_current_wye(
+		pm::AbstractExplicitNeutralIVRModel,
+		nw::Int,
+		id::Int,
+		bus_id::Int,
+		connections::Vector{Int},
+		a::Vector{<:Real},
+		alpha::Vector{<:Real},
+		b::Vector{<:Real},
+		beta::Vector{<:Real};
+		report::Bool=true
+	)
+
+For IVR models with explicit neutrals,
+create non-linear expressions for the terminal current flows `:crd_bus` and `:cid_bus`
+of wye-connected loads
+"""
+function constraint_mc_load_current_wye(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, load_current, a::Vector{<:Real}, alpha::Vector{<:Real}, b::Vector{<:Real}, beta::Vector{<:Real}; report::Bool=true)
+    vr = PMD.var(pm, nw, :vr, bus_id)
+    vi = PMD.var(pm, nw, :vi, bus_id)
+
+    crd = JuMP.NonlinearExpr[]
+    cid = JuMP.NonlinearExpr[]
+    ccmd = JuMP.NonlinearExpr[]
+
+    phases = connections[1:end-1]
+    n      = connections[end]
+
+    for (idx, p) in enumerate(phases)
+        push!(crd, JuMP.@expression(pm.model,
+             a[idx]*(vr[p]-vr[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(alpha[idx]/2-1)
+            +b[idx]*(vi[p]-vi[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(beta[idx]/2 -1)
+        ))
+        push!(cid, JuMP.@expression(pm.model,
+             a[idx]*(vi[p]-vi[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(alpha[idx]/2-1)
+            -b[idx]*(vr[p]-vr[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(beta[idx]/2 -1)
+        ))
+        push!(ccmd, JuMP.@expression(pm.model,
+            (a[idx]*(vr[p]-vr[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(alpha[idx]/2-1)
+            +b[idx]*(vi[p]-vi[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(beta[idx]/2 -1))^2 
+            +
+            (a[idx]*(vi[p]-vi[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(alpha[idx]/2-1)
+            -b[idx]*(vr[p]-vr[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(beta[idx]/2 -1))^2
+        ))
+        JuMP.@constraint(pm.model, load_current[idx]^2 ==
+            (a[idx]*(vr[p]-vr[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(alpha[idx]/2-1)
+            +b[idx]*(vi[p]-vi[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(beta[idx]/2 -1))^2 
+            +
+            (a[idx]*(vi[p]-vi[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(alpha[idx]/2-1)
+            -b[idx]*(vr[p]-vr[n])*((vr[p]-vr[n])^2+(vi[p]-vi[n])^2)^(beta[idx]/2 -1))^2
+            )
+    end  
+
+    PMD.var(pm, nw, :crd)[id] = crd
+    PMD.var(pm, nw, :cid)[id] = cid
+
+    crd_bus_n = JuMP.@expression(pm.model, -sum(crd[i] for i in 1:length(phases)))
+    cid_bus_n = JuMP.@expression(pm.model, -sum(cid[i] for i in 1:length(phases)))
+
+    PMD.var(pm, nw, :crd_bus)[id] = crd_bus = PMD._merge_bus_flows(pm, [crd..., crd_bus_n], connections)
+    PMD.var(pm, nw, :cid_bus)[id] = cid_bus = PMD._merge_bus_flows(pm, [cid..., cid_bus_n], connections)
+
+    if report
+        pd_bus = JuMP.NonlinearExpr[]
+        qd_bus = JuMP.NonlinearExpr[]
+        for (idx,c) in enumerate(connections)
+            push!(pd_bus, JuMP.@expression(pm.model,  vr[c]*crd_bus[c]+vi[c]*cid_bus[c]))
+            push!(qd_bus, JuMP.@expression(pm.model, -vr[c]*cid_bus[c]+vi[c]*crd_bus[c]))
+        end
+
+        PMD.sol(pm, nw, :load, id)[:pd_bus] = JuMP.Containers.DenseAxisArray(pd_bus, connections)
+        PMD.sol(pm, nw, :load, id)[:qd_bus] = JuMP.Containers.DenseAxisArray(qd_bus, connections)
+
+        PMD.sol(pm, nw, :load, id)[:crd] = JuMP.Containers.DenseAxisArray(crd, connections)
+        PMD.sol(pm, nw, :load, id)[:cid] = JuMP.Containers.DenseAxisArray(cid, connections)
+        PMD.sol(pm, nw, :load, id)[:ccmd] = JuMP.Containers.DenseAxisArray(ccmd, connections)
+
+        PMD.sol(pm, nw, :load, id)[:crd_bus] = crd_bus
+        PMD.sol(pm, nw, :load, id)[:cid_bus] = cid_bus
+
+        pd = JuMP.NonlinearExpr[]
+        qd = JuMP.NonlinearExpr[]
+        for (idx, p) in enumerate(phases)
+            push!(pd, JuMP.@expression(pm.model, a[idx]*(vr[p]^2+vi[p]^2)^(alpha[idx]/2) ))
+            push!(qd, JuMP.@expression(pm.model, b[idx]*(vr[p]^2+vi[p]^2)^(beta[idx]/2)  ))
+        end
+        PMD.sol(pm, nw, :load, id)[:pd] = JuMP.Containers.DenseAxisArray(pd, connections)
+        PMD.sol(pm, nw, :load, id)[:qd] = JuMP.Containers.DenseAxisArray(qd, connections)
+    end
+end
+
+
+"""
+	function constraint_mc_load_current_delta(
+		pm::AbstractExplicitNeutralIVRModel,
+		nw::Int,
+		id::Int,
+		bus_id::Int,
+		connections::Vector{Int},
+		a::Vector{<:Real},
+		alpha::Vector{<:Real},
+		b::Vector{<:Real},
+		beta::Vector{<:Real};
+		report::Bool=true
+	)
+
+For IVR models with explicit neutrals,
+create non-linear expressions for the terminal current flows `:crd_bus` and `:cid_bus`
+of delta-connected loads
+"""
+function constraint_mc_load_current_delta(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, a::Vector{<:Real}, alpha::Vector{<:Real}, b::Vector{<:Real}, beta::Vector{<:Real}; report::Bool=true)
+    vr = PMD.var(pm, nw, :vr, bus_id)
+    vi = PMD.var(pm, nw, :vi, bus_id)
+
+
+    ph = connections
+    ph_next = [connections[2:end]..., connections[1]]
+    P = length(ph)
+    idxs = 1:P
+    idxs_prev = [idxs[end], idxs[1:end-1]...]
+
+    vrd = [vr[c]-vr[d] for (c,d) in zip(ph,ph_next)]
+    vid = [vi[c]-vi[d] for (c,d) in zip(ph,ph_next)]
+
+    crd = JuMP.@expression(pm.model, [i in 1:P],
+        a[i]*vrd[i]*(vrd[i]^2+vid[i]^2)^(alpha[i]/2-1)
+       +b[i]*vid[i]*(vrd[i]^2+vid[i]^2)^(beta[i]/2 -1)
+    )
+    cid = JuMP.@expression(pm.model, [i in 1:P],
+        a[i]*vid[i]*(vrd[i]^2+vid[i]^2)^(alpha[i]/2-1)
+       -b[i]*vrd[i]*(vrd[i]^2+vid[i]^2)^(beta[i]/2 -1)
+    )
+
+    crd_bus = JuMP.@expression(pm.model, [i in 1:P], crd[i]-crd[idxs_prev[i]])
+    cid_bus = JuMP.@expression(pm.model, [i in 1:P], cid[i]-cid[idxs_prev[i]])
+
+    PMD.var(pm, nw, :crd_bus)[id] = PMD._merge_bus_flows(pm, crd_bus, connections)
+    PMD.var(pm, nw, :cid_bus)[id] = PMD._merge_bus_flows(pm, cid_bus, connections)
+
+    if report
+        pd_bus = JuMP.@expression(pm.model, [i in 1:P],  vr[i]*crd_bus[i]+vi[i]*cid_bus[i])
+        qd_bus = JuMP.@expression(pm.model, [i in 1:P], -vr[i]*cid_bus[i]+vi[i]*crd_bus[i])
+
+        PMD.sol(pm, nw, :load, id)[:pd_bus] = pd_bus
+        PMD.sol(pm, nw, :load, id)[:qd_bus] = qd_bus
+
+        pd = JuMP.@expression(pm.model, [i in 1:P], a[i]*(vrd[i]^2+vid[i]^2)^(alpha[i]/2) )
+        qd = JuMP.@expression(pm.model, [i in 1:P], b[i]*(vrd[i]^2+vid[i]^2)^(beta[i]/2)  )
+        PMD.sol(pm, nw, :load, id)[:pd] = pd
+        PMD.sol(pm, nw, :load, id)[:qd] = qd
     end
 end
 
@@ -322,38 +584,172 @@ For IVR models with explicit neutrals,
 creates non-linear expressions for the inverter dc link power `:pdc_link`
 of wye-connected generators as a function of voltage and current
 """
-function constraint_mc_inverter_dc_link_ripple_power(pm::_PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, pdcmin::Real, pdcmax::Real; report::Bool=true)
-    vr = _PMD.var(pm, nw, :vr, bus_id)
-    vi = _PMD.var(pm, nw, :vi, bus_id)
-    crg = _PMD.var(pm, nw, :crg, id)
-    cig = _PMD.var(pm, nw, :cig, id)
-
+function constraint_mc_inverter_dc_link_ripple_power(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, pdcmin::Real, pdcmax::Real; report::Bool=true)
+    # bus_id = 1
+    vr = PMD.var(pm, nw, :vr, bus_id)
+    vi = PMD.var(pm, nw, :vi, bus_id)
+    crg = PMD.var(pm, nw, :crg, id)
+    cig = PMD.var(pm, nw, :cig, id)
+    crg_bus = PMD.var(pm, nw, :crg_bus)[id]
+    cig_bus = PMD.var(pm, nw, :cig_bus)[id]
+    
     phases = connections[1:end-1]
     n      = connections[end]
+
     
-    pdc_link = JuMP.@expression(pm.model,  
-        sqrt(sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
-                ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
-            for (idx, p) in enumerate(phases))
+    # pdc_link = JuMP.@expression(pm.model,  
+    #     sqrt(sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
+    #             ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
+    #         for (idx, p) in enumerate(phases))
+    #         )
+    #     )
+    
+    if pdcmax > 0
+        # if pdcmin > -Inf
+        #     JuMP.@constraint(pm.model, pdcmin^2 <= sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) )^2
+        #                                             + 
+        #                                             sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
+        #                     )
+        #     # JuMP.@constraint(pm.model, pdcmin^2 <= sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
+        #     #                                                 ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
+        #     #                                             for (idx, p) in enumerate(phases))
+        #     #                 )
+        # end
+        if pdcmax < Inf
+            JuMP.@constraint(pm.model, pdcmax^2 >= sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) )^2
+                                                    + 
+                                                    sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
+                            )
+            # JuMP.@constraint(pm.model, pdcmax^2 >= sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
+            #                                                 ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
+            #                                             for (idx, p) in enumerate(phases))
+            #                 )
+            
+        end
+    elseif pdcmax == 0
+        JuMP.@constraint(pm.model, sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) ) == 0)
+        JuMP.@constraint(pm.model, sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) ) == 0)
+        # JuMP.@constraint(pm.model, sum( (vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx] for (idx, p) in enumerate(phases) ) == 0)
+        # JuMP.@constraint(pm.model, sum( (vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx] for (idx, p) in enumerate(phases) ) == 0)
+        # JuMP.@constraint(pm.model, pdcmin^2 == sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
+        #                                                     ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
+        #                                                 for (idx, p) in enumerate(phases))
+        #                     )
+        # JuMP.@constraint(pm.model, pdcmin^2 == sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) )^2
+        #                                             + 
+        #                                             sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
+        #                     )
+    end
+    
+
+    # if pdcmax < Inf
+        pdc_link = JuMP.@expression(pm.model,  
+        sqrt(
+            sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) )^2
+            + 
+            sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
             )
         )
+
+        PMD.var(pm, nw, :pdc_link)[id] = pdc_link
+        
+        if report
+            PMD.sol(pm, nw, :gen, id)[:pdc_link] = pdc_link
+        end
+    # end
+
+end
+
+
+
+
+"""
+	function constraint_mc_inverter_branch_dc_link_ripple_power(
+		pm::AbstractNLExplicitNeutralIVRModel,
+		nw::Int,
+		id::Int,
+		bus_id::Int,
+		connections::Vector{Int},
+        pdcmin::Vector{<:Real},
+		pdcmax::Vector{<:Real},
+		report::Bool=true
+	)
+
+For IVR models with explicit neutrals,
+creates non-linear expressions for the inverter dc link power `:pdc_link`
+of wye-connected generators as a function of voltage and current
+"""
+function constraint_mc_inverter_branch_dc_link_ripple_power(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, f_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, pdcmin::Real, pdcmax::Real; report::Bool=true)
+    ### use from side voltage and currents
+    vr = [PMD.var(pm, nw, :vr, f_idx[1])[t] for t in f_connections]
+    vi = [PMD.var(pm, nw, :vi, f_idx[1])[t] for t in f_connections]
+    cr = PMD.var(pm, nw, :cr, f_idx)
+    ci = PMD.var(pm, nw, :ci, f_idx)
     
-    if pdcmin > -Inf
-        JuMP.@constraint(pm.model, pdcmin^2 <= sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
-                                                        ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
-                                                    for (idx, p) in enumerate(phases))
-                        )
-    end
-    if pdcmax < Inf
-        JuMP.@constraint(pm.model, pdcmax^2 >= sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
-                                                        ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
-                                                    for (idx, p) in enumerate(phases))
-                        )
-    end
+    phases = f_connections[1:end-1]
+    n      = f_connections[end]
     
-    _PMD.var(pm, nw, :pdc_link)[id] = pdc_link
+
+    pdc_link = JuMP.@expression(pm.model,  
+    sqrt(
+        sum( vr[p]*cr[idx] - vi[p]*ci[idx] for (idx, p) in enumerate(f_connections) )^2
+        + 
+        sum( vr[p]*ci[idx] + vi[p]*cr[idx] for (idx, p) in enumerate(f_connections) )^2
+        )
+    )
+
+    # pdc_link = JuMP.@expression(pm.model,  
+    #     sqrt(sum( ((vr[p])*cr[idx]-(vi[p])*ci[idx])^2 + 
+    #             ((vr[p])*ci[idx]+(vi[p])*cr[idx])^2 
+    #         for (idx, p) in enumerate(f_connections))
+    #         )
+    #     )
+
+    # pdc_link = JuMP.@expression(pm.model,  
+    #     sqrt(sum( ((vr[p]-vr[n])*cr[idx]-(vi[p]-vi[n])*ci[idx])^2 + 
+    #             ((vr[p]-vr[n])*ci[idx]+(vi[p]-vi[n])*cr[idx])^2 
+    #         for (idx, p) in enumerate(phases))
+    #         )
+    #     )
+    
+    # if pdcmin !== pdcmax
+        if pdcmin > -Inf
+            JuMP.@constraint(pm.model, pdcmin^2 <= sum( vr[p]*cr[idx] - vi[p]*ci[idx] for (idx, p) in enumerate(f_connections) )^2
+                                                    + 
+                                                    sum( vr[p]*ci[idx] + vi[p]*cr[idx] for (idx, p) in enumerate(f_connections) )^2
+                            )
+            # JuMP.@constraint(pm.model, pdcmin^2 <= sum( ((vr[p]-vr[n])*cr[idx]-(vi[p]-vi[n])*ci[idx])^2 + 
+            #                                                 ((vr[p]-vr[n])*ci[idx]+(vi[p]-vi[n])*cr[idx])^2 
+            #                                             for (idx, p) in enumerate(phases))
+            #                 )
+            # JuMP.@constraint(pm.model, pdcmin^2 <= sum( ((vr[p])*cr[idx]-(vi[p])*ci[idx])^2 + 
+            #                                                 ((vr[p])*ci[idx]+(vi[p])*cr[idx])^2 
+            #                                             for (idx, p) in enumerate(f_connections))
+            #                 )
+        end
+        if pdcmax < Inf
+            JuMP.@constraint(pm.model, pdcmax^2 >= sum( vr[p]*cr[idx] - vi[p]*ci[idx] for (idx, p) in enumerate(f_connections) )^2
+                                                    + 
+                                                    sum( vr[p]*ci[idx] + vi[p]*cr[idx] for (idx, p) in enumerate(f_connections) )^2
+                            )
+            # JuMP.@constraint(pm.model, pdcmax^2 >= sum( ((vr[p]-vr[n])*cr[idx]-(vi[p]-vi[n])*ci[idx])^2 + 
+            #                                                 ((vr[p]-vr[n])*ci[idx]+(vi[p]-vi[n])*cr[idx])^2 
+            #                                             for (idx, p) in enumerate(phases))
+            #                 )
+            # JuMP.@constraint(pm.model, pdcmax^2 >= sum( ((vr[p])*cr[idx]-(vi[p])*ci[idx])^2 + 
+            #                                                 ((vr[p])*ci[idx]+(vi[p])*cr[idx])^2 
+            #                                             for (idx, p) in enumerate(f_connections))
+            #                 )
+        end
+    # else
+    #     JuMP.@constraint(pm.model, pdcmin^2 == sum( ((vr[p]-vr[n])*cr[idx]-(vi[p]-vi[n])*ci[idx])^2 + 
+    #                                                         ((vr[p]-vr[n])*ci[idx]+(vi[p]-vi[n])*cr[idx])^2 
+    #                                                     for (idx, p) in enumerate(phases))
+    #                         )
+    # end
+    PMD.var(pm, nw, :pdc_link)[id] = pdc_link
 
     if report
-        _PMD.sol(pm, nw, :gen, id)[:pdc_link] = pdc_link
+        PMD.sol(pm, nw, :branch, id)[:pdc_link] = pdc_link
     end
 end

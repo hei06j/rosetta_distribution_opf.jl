@@ -1,6 +1,6 @@
 function get_solutions(model, result)
-    pv_gen_id = [i for (i,gen) in _PMD.ref(model, 0, :gen) if occursin("pv", gen["name"])][1]
-    gen_bus_id = _PMD.ref(model, 0, :gen, pv_gen_id)["gen_bus"]
+    pv_gen_id = [i for (i,gen) in PMD.ref(model, 0, :gen) if occursin("pv", gen["name"])][1]
+    gen_bus_id = PMD.ref(model, 0, :gen, pv_gen_id)["gen_bus"]
     
     v_pv = result["solution"]["bus"]["$gen_bus_id"]["vr"] .+ im*result["solution"]["bus"]["$gen_bus_id"]["vi"]
     v_pv_012 = sequence(v_pv[1:3])
@@ -31,7 +31,7 @@ function get_solutions(model, result)
         append!(cd_012, sequence(c[1:3]))
     end
     
-    _, _, _, pv_branch = get_pv_bus_branch(_PMD.ref(model, 0))
+    _, _, _, pv_branch = get_pv_bus_branch(PMD.ref(model, 0))
     c_pv = []#Array{Float64}(undef, 4, 0)
     c_pv_012 = []#Array{Float64}(undef, 3, 0)
     for branch_id in pv_branch
@@ -40,7 +40,7 @@ function get_solutions(model, result)
         append!(c_pv_012, sequence(c[1:3]))
     end
 
-    ref_gen, ref_bus, ref_arc, ref_branch = get_ref_bus_branch(_PMD.ref(model, 0))
+    ref_gen, ref_bus, ref_arc, ref_branch = get_ref_bus_branch(PMD.ref(model, 0))
     c_ref = result["solution"]["branch"]["$ref_branch"]["cr_fr"] .+ im * result["solution"]["branch"]["$ref_branch"]["ci_fr"]
     c_ref_012 = sequence(c_ref[1:3])
     

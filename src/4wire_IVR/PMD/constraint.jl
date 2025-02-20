@@ -2,7 +2,7 @@
 
 """
 	function constraint_mc_transformer_voltage_yy(
-		pm::_PMD.RectangularVoltageExplicitNeutralModels,
+		pm::PMD.RectangularVoltageExplicitNeutralModels,
 		nw::Int,
 		trans_id::Int,
 		f_bus::Int,
@@ -26,7 +26,7 @@ for wye-wye connected transformers
 (vi_fr_P-vi_fr_n) == scale * (vi_to_P.-vi_to_n)
 ```
 """
-function constraint_mc_transformer_voltage_yy(pm::_PMD.RectangularVoltageExplicitNeutralModels, nw::Int, trans_id::Int, f_bus::Int, t_bus::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, pol::Int, tm_set::Vector{<:Real}, tm_fixed::Vector{Bool}, tm_scale::Real)
+function constraint_mc_transformer_voltage_yy(pm::PMD.RectangularVoltageExplicitNeutralModels, nw::Int, trans_id::Int, f_bus::Int, t_bus::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, pol::Int, tm_set::Vector{<:Real}, tm_fixed::Vector{Bool}, tm_scale::Real)
     vr_fr_P = [var(pm, nw, :vr, f_bus)[c] for c in f_connections[1:end-1]]
     vi_fr_P = [var(pm, nw, :vi, f_bus)[c] for c in f_connections[1:end-1]]
     vr_fr_n = var(pm, nw, :vr, f_bus)[f_connections[end]]
@@ -47,7 +47,7 @@ end
 
 """
 	function constraint_mc_transformer_voltage_dy(
-		pm::_PMD.RectangularVoltageExplicitNeutralModels,
+		pm::PMD.RectangularVoltageExplicitNeutralModels,
 		nw::Int,
 		trans_id::Int,
 		f_bus::Int,
@@ -71,7 +71,7 @@ Md*vr_fr_P == scale * (vr_to_P - vr_to_n)
 Md*vi_fr_P == scale * (vi_to_P - vi_to_n)
 ```
 """
-function constraint_mc_transformer_voltage_dy(pm::_PMD.RectangularVoltageExplicitNeutralModels, nw::Int, trans_id::Int, f_bus::Int, t_bus::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, pol::Int, tm_set::Vector{<:Real}, tm_fixed::Vector{Bool}, tm_scale::Real)
+function constraint_mc_transformer_voltage_dy(pm::PMD.RectangularVoltageExplicitNeutralModels, nw::Int, trans_id::Int, f_bus::Int, t_bus::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, pol::Int, tm_set::Vector{<:Real}, tm_fixed::Vector{Bool}, tm_scale::Real)
     vr_fr_P = [var(pm, nw, :vr, f_bus)[c] for c in f_connections]
     vi_fr_P = [var(pm, nw, :vi, f_bus)[c] for c in f_connections]
     vr_to_P = [var(pm, nw, :vr, t_bus)[c] for c in t_connections[1:end-1]]
@@ -84,7 +84,7 @@ function constraint_mc_transformer_voltage_dy(pm::_PMD.RectangularVoltageExplici
     scale = (tm_scale*pol).*tm_set
 
     n_phases = length(tm)
-    Md = _PMD._get_delta_transformation_matrix(n_phases)
+    Md = PMD._get_delta_transformation_matrix(n_phases)
 
     JuMP.@constraint(pm.model, Md*vr_fr_P .== scale.*(vr_to_P .- vr_to_n))
     JuMP.@constraint(pm.model, Md*vi_fr_P .== scale.*(vi_to_P .- vi_to_n))
@@ -93,7 +93,7 @@ end
 
 """
 	function constraint_mc_transformer_current_yy(
-		pm::_PMD.AbstractExplicitNeutralIVRModel,
+		pm::PMD.AbstractExplicitNeutralIVRModel,
 		nw::Int,
 		trans_id::Int,
 		f_bus::Int,
@@ -118,7 +118,7 @@ scale*cr_fr_P + cr_to_P == 0
 scale*ci_fr_P + ci_to_P == 0
 ```
 """
-function constraint_mc_transformer_current_yy(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, trans_id::Int, f_bus::Int, t_bus::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, pol::Int, tm_set::Vector{<:Real}, tm_fixed::Vector{Bool}, tm_scale::Real)
+function constraint_mc_transformer_current_yy(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, trans_id::Int, f_bus::Int, t_bus::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, pol::Int, tm_set::Vector{<:Real}, tm_fixed::Vector{Bool}, tm_scale::Real)
     cr_fr_P = var(pm, nw, :crt, f_idx)
     ci_fr_P = var(pm, nw, :cit, f_idx)
     cr_to_P = var(pm, nw, :crt, t_idx)
@@ -131,16 +131,16 @@ function constraint_mc_transformer_current_yy(pm::_PMD.AbstractExplicitNeutralIV
     JuMP.@constraint(pm.model, scale.*cr_fr_P .+ cr_to_P .== 0)
     JuMP.@constraint(pm.model, scale.*ci_fr_P .+ ci_to_P .== 0)
 
-    var(pm, nw, :crt_bus)[f_idx] = _PMD._merge_bus_flows(pm, [cr_fr_P..., -sum(cr_fr_P)], f_connections)
-    var(pm, nw, :cit_bus)[f_idx] = _PMD._merge_bus_flows(pm, [ci_fr_P..., -sum(ci_fr_P)], f_connections)
-    var(pm, nw, :crt_bus)[t_idx] = _PMD._merge_bus_flows(pm, [cr_to_P..., -sum(cr_to_P)], t_connections)
-    var(pm, nw, :cit_bus)[t_idx] = _PMD._merge_bus_flows(pm, [ci_to_P..., -sum(ci_to_P)], t_connections)
+    var(pm, nw, :crt_bus)[f_idx] = PMD._merge_bus_flows(pm, [cr_fr_P..., -sum(cr_fr_P)], f_connections)
+    var(pm, nw, :cit_bus)[f_idx] = PMD._merge_bus_flows(pm, [ci_fr_P..., -sum(ci_fr_P)], f_connections)
+    var(pm, nw, :crt_bus)[t_idx] = PMD._merge_bus_flows(pm, [cr_to_P..., -sum(cr_to_P)], t_connections)
+    var(pm, nw, :cit_bus)[t_idx] = PMD._merge_bus_flows(pm, [ci_to_P..., -sum(ci_to_P)], t_connections)
 end
 
 
 """
 	function constraint_mc_transformer_current_dy(
-		pm::_PMD.AbstractExplicitNeutralIVRModel,
+		pm::PMD.AbstractExplicitNeutralIVRModel,
 		nw::Int,
 		trans_id::Int,
 		f_bus::Int,
@@ -165,7 +165,7 @@ scale*cr_fr_P + cr_to_P == 0
 scale*ci_fr_P + ci_to_P == 0
 ```
 """
-function constraint_mc_transformer_current_dy(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, trans_id::Int, f_bus::Int, t_bus::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, pol::Int, tm_set::Vector{<:Real}, tm_fixed::Vector{Bool}, tm_scale::Real)
+function constraint_mc_transformer_current_dy(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, trans_id::Int, f_bus::Int, t_bus::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}, pol::Int, tm_set::Vector{<:Real}, tm_fixed::Vector{Bool}, tm_scale::Real)
     cr_fr_P = var(pm, nw, :crt, f_idx)
     ci_fr_P = var(pm, nw, :cit, f_idx)
     cr_to_P = var(pm, nw, :crt, t_idx)
@@ -176,21 +176,21 @@ function constraint_mc_transformer_current_dy(pm::_PMD.AbstractExplicitNeutralIV
     scale = (tm_scale*pol).*tm_set
 
     n_phases = length(tm)
-    Md = _PMD._get_delta_transformation_matrix(n_phases)
+    Md = PMD._get_delta_transformation_matrix(n_phases)
 
     JuMP.@constraint(pm.model, scale.*cr_fr_P .+ cr_to_P .== 0)
     JuMP.@constraint(pm.model, scale.*ci_fr_P .+ ci_to_P .== 0)
 
-    var(pm, nw, :crt_bus)[f_idx] = _PMD._merge_bus_flows(pm, Md'*cr_fr_P, f_connections)
-    var(pm, nw, :cit_bus)[f_idx] = _PMD._merge_bus_flows(pm, Md'*ci_fr_P, f_connections)
-    var(pm, nw, :crt_bus)[t_idx] = _PMD._merge_bus_flows(pm, [cr_to_P..., -sum(cr_to_P)], t_connections)
-    var(pm, nw, :cit_bus)[t_idx] = _PMD._merge_bus_flows(pm, [ci_to_P..., -sum(ci_to_P)], t_connections)
+    var(pm, nw, :crt_bus)[f_idx] = PMD._merge_bus_flows(pm, Md'*cr_fr_P, f_connections)
+    var(pm, nw, :cit_bus)[f_idx] = PMD._merge_bus_flows(pm, Md'*ci_fr_P, f_connections)
+    var(pm, nw, :crt_bus)[t_idx] = PMD._merge_bus_flows(pm, [cr_to_P..., -sum(cr_to_P)], t_connections)
+    var(pm, nw, :cit_bus)[t_idx] = PMD._merge_bus_flows(pm, [ci_to_P..., -sum(ci_to_P)], t_connections)
 end
 
 
 """
 	function constraint_mc_transformer_thermal_limit(
-		pm::_PMD.AbstractNLExplicitNeutralIVRModel,
+		pm::PMD.AbstractNLExplicitNeutralIVRModel,
 		nw::Int,
 		id::Int,
 		f_idx::Tuple,
@@ -213,7 +213,7 @@ sum(pt_fr)^2 + sum(qt_fr)^2 <= sm_ub^2
 sum(pt_to)^2 + sum(qt_to)^2 <= sm_ub^2
 ```
 """
-function constraint_mc_transformer_thermal_limit(pm::_PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, f_idx::Tuple, t_idx::Tuple, f_bus::Int, t_bus::Int, f_connections::Vector, t_connections::Vector, config, sm_ub::Real; report::Bool=true)
+function constraint_mc_transformer_thermal_limit(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, f_idx::Tuple, t_idx::Tuple, f_bus::Int, t_bus::Int, f_connections::Vector, t_connections::Vector, config, sm_ub::Real; report::Bool=true)
     vr_fr = var(pm, nw, :vr, f_bus)
     vi_fr = var(pm, nw, :vi, f_bus)
     vr_to = var(pm, nw, :vr, t_bus)
@@ -224,13 +224,13 @@ function constraint_mc_transformer_thermal_limit(pm::_PMD.AbstractNLExplicitNeut
     crt_to = var(pm, nw, :crt, t_idx)
     cit_to = var(pm, nw, :cit, t_idx)
 
-    if config==_PMD.WYE || length(crt_fr)==1
+    if config==PMD.WYE || length(crt_fr)==1
         P_fr = f_connections[1:end-1]
         n_fr = f_connections[end]
         vrt_fr = [vr_fr[p]-vr_fr[n_fr] for p in P_fr]
         vit_fr = [vi_fr[p]-vi_fr[n_fr] for p in P_fr]
-    elseif config==_PMD.DELTA && length(crt_fr)==3
-        M = _PMD._get_delta_transformation_matrix(3)
+    elseif config==PMD.DELTA && length(crt_fr)==3
+        M = PMD._get_delta_transformation_matrix(3)
         vrt_fr = M*[vr_to[p] for p in f_connections]
         vit_fr = M*[vi_to[p] for p in f_connections]
     else
@@ -254,19 +254,19 @@ function constraint_mc_transformer_thermal_limit(pm::_PMD.AbstractNLExplicitNeut
     end
 
     if report
-        _PMD.sol(pm, nw, :transformer, id)[:pf] = pt_fr
-        _PMD.sol(pm, nw, :transformer, id)[:qf] = qt_fr
-        _PMD.sol(pm, nw, :transformer, id)[:pt] = pt_to
-        _PMD.sol(pm, nw, :transformer, id)[:qt] = qt_to
-        _PMD.sol(pm, nw, :transformer, id)[:smtot_fr] = JuMP.@NLexpression(pm.model, sqrt(sum(pt_fr[i] for i in idxs)^2 + sum(qt_fr[i] for i in idxs)^2))
-        _PMD.sol(pm, nw, :transformer, id)[:smtot_to] = JuMP.@NLexpression(pm.model, sqrt(sum(pt_to[i] for i in idxs)^2 + sum(qt_to[i] for i in idxs)^2))
+        PMD.sol(pm, nw, :transformer, id)[:pf] = pt_fr
+        PMD.sol(pm, nw, :transformer, id)[:qf] = qt_fr
+        PMD.sol(pm, nw, :transformer, id)[:pt] = pt_to
+        PMD.sol(pm, nw, :transformer, id)[:qt] = qt_to
+        PMD.sol(pm, nw, :transformer, id)[:smtot_fr] = JuMP.@NLexpression(pm.model, sqrt(sum(pt_fr[i] for i in idxs)^2 + sum(qt_fr[i] for i in idxs)^2))
+        PMD.sol(pm, nw, :transformer, id)[:smtot_to] = JuMP.@NLexpression(pm.model, sqrt(sum(pt_to[i] for i in idxs)^2 + sum(qt_to[i] for i in idxs)^2))
     end
 end
 
 
 """
 	function constraint_mc_switch_current(
-		pm::_PMD.AbstractExplicitNeutralIVRModel,
+		pm::PMD.AbstractExplicitNeutralIVRModel,
 		nw::Int,
 		id::Int,
 		f_idx::Tuple{Int,Int,Int},
@@ -280,7 +280,7 @@ For IVR models with explicit neutrals,
 create expressions for the terminal current flows `:crsw_bus` and `cisw_bus`,
 and link the from-side to the to-side switch current
 """
-function constraint_mc_switch_current(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, id::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}; report::Bool=true)
+function constraint_mc_switch_current(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, id::Int, f_idx::Tuple{Int,Int,Int}, t_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, t_connections::Vector{Int}; report::Bool=true)
     crsw_fr = var(pm, nw, :crsw, f_idx)
     cisw_fr = var(pm, nw, :cisw, f_idx)
     crsw_to = var(pm, nw, :crsw, t_idx)
@@ -289,16 +289,16 @@ function constraint_mc_switch_current(pm::_PMD.AbstractExplicitNeutralIVRModel, 
     JuMP.@constraint(pm.model, crsw_fr .+ crsw_to .== 0)
     JuMP.@constraint(pm.model, cisw_fr .+ cisw_to .== 0)
 
-    var(pm, nw, :crsw_bus)[f_idx] = _PMD._merge_bus_flows(pm, crsw_fr, f_connections)
-    var(pm, nw, :cisw_bus)[f_idx] = _PMD._merge_bus_flows(pm, cisw_fr, f_connections)
-    var(pm, nw, :crsw_bus)[t_idx] = _PMD._merge_bus_flows(pm, crsw_to, t_connections)
-    var(pm, nw, :cisw_bus)[t_idx] = _PMD._merge_bus_flows(pm, cisw_to, t_connections)
+    var(pm, nw, :crsw_bus)[f_idx] = PMD._merge_bus_flows(pm, crsw_fr, f_connections)
+    var(pm, nw, :cisw_bus)[f_idx] = PMD._merge_bus_flows(pm, cisw_fr, f_connections)
+    var(pm, nw, :crsw_bus)[t_idx] = PMD._merge_bus_flows(pm, crsw_to, t_connections)
+    var(pm, nw, :cisw_bus)[t_idx] = PMD._merge_bus_flows(pm, cisw_to, t_connections)
 end
 
 
 """
 	function constraint_mc_switch_current_limit(
-		pm::_PMD.AbstractExplicitNeutralIVRModel,
+		pm::PMD.AbstractExplicitNeutralIVRModel,
 		nw::Int,
 		f_idx::Tuple{Int,Int,Int},
 		connections::Vector{Int},
@@ -310,7 +310,7 @@ imposes a bound on the switch current magnitude per conductor.
 Note that a bound on the from-side implies the same bound on the to-side current,
 so it suffices to apply this only explicitly at the from-side.
 """
-function constraint_mc_switch_current_limit(pm::_PMD.AbstractExplicitNeutralIVRModel, nw::Int, f_idx::Tuple{Int,Int,Int}, connections::Vector{Int}, rating::Vector{<:Real})::Nothing
+function constraint_mc_switch_current_limit(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, f_idx::Tuple{Int,Int,Int}, connections::Vector{Int}, rating::Vector{<:Real})::Nothing
     crsw = var(pm, nw, :crsw, f_idx)
     cisw = var(pm, nw, :cisw, f_idx)
 
@@ -321,7 +321,7 @@ function constraint_mc_switch_current_limit(pm::_PMD.AbstractExplicitNeutralIVRM
         end
     end
 
-    _PMD.con(pm, nw, :mu_cm_switch)[f_idx] = mu_cm_fr
+    PMD.con(pm, nw, :mu_cm_switch)[f_idx] = mu_cm_fr
 
     nothing
 end
@@ -329,7 +329,7 @@ end
 
 """
 	function constraint_mc_switch_thermal_limit(
-		pm::_PMD.AbstractNLExplicitNeutralIVRModel,
+		pm::PMD.AbstractNLExplicitNeutralIVRModel,
 		nw::Int,
 		f_idx::Tuple{Int,Int,Int},
 		f_connections::Vector{Int},
@@ -342,7 +342,7 @@ Note that a bound on the from-side implies the same bound on the to-side power
 when the switch is closed (equal voltages), and also when it is open since the
 power then equals zero on both ends.
 """
-function constraint_mc_switch_thermal_limit(pm::_PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, f_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, rating::Vector{<:Real})::Nothing
+function constraint_mc_switch_thermal_limit(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, f_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, rating::Vector{<:Real})::Nothing
     vr_fr = [var(pm, nw, :vr, f_idx[2])[t] for t in f_connections]
     vi_fr = [var(pm, nw, :vi, f_idx[2])[t] for t in f_connections]
     crsw_fr = var(pm, nw, :crsw, f_idx)
@@ -358,7 +358,7 @@ function constraint_mc_switch_thermal_limit(pm::_PMD.AbstractNLExplicitNeutralIV
         end
     end
 
-    _PMD.con(pm, nw, :mu_sm_switch)[f_idx] = mu_sm_fr
+    PMD.con(pm, nw, :mu_sm_switch)[f_idx] = mu_sm_fr
 
     nothing
 end

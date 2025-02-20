@@ -1,3 +1,20 @@
+function get_sequence_components(x)
+    ### x must be complex
+    alpha = exp(im*2/3*pi)
+    T = 1/3 * [1 1 1 ; 1 alpha alpha^2 ; 1 alpha^2 alpha]
+    Tre = real.(T)
+    Tim = imag.(T)
+
+    x_re = real.(x)
+    x_im = imag.(x)
+    
+    x_seq_re = Tre * x_re .- Tim * x_im
+    x_seq_im = Tre * x_im .+ Tim * x_re
+    x_seq = x_seq_re + im*x_seq_im
+    x_seq_m= abs.(x_seq)
+    return x_seq_re, x_seq_im, x_seq_m
+end
+
 function sequence(x)
     @assert length(x) == 3
 

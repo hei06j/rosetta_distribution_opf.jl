@@ -1,7 +1,7 @@
 function solve_opf_acr(data, optimizer; verbose=true)
     time_data_start = time()
 
-    ref = _IM.build_ref(data, _PMD.ref_add_core!, _PMD._pmd_global_keys, _PMD.pmd_it_name)[:it][:pmd][:nw][0]
+    ref = IM.build_ref(data, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
     data_load_time = time() - time_data_start
     time_model_start = time()
 
@@ -94,7 +94,7 @@ function solve_opf_acr(data, optimizer; verbose=true)
         vr_to = [vr[:,branch["t_bus"]]...]
         vi_to = [vi[:,branch["t_bus"]]...]
 
-        g, b = _PMD.calc_branch_y(branch)
+        g, b = PMD.calc_branch_y(branch)
         g_fr = branch["g_fr"]
         b_fr = branch["b_fr"]
         g_to = branch["g_to"]

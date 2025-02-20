@@ -17,18 +17,18 @@ function IVR_EN(model, ref)
     vi = Dict(i=>JuMP.Containers.DenseAxisArray(Vector{JuMP.AffExpr}([t in vi[i].axes[1] ? vi[i][t] : 0.0 for t in bus["terminals"]]), bus["terminals"]) for (i, bus) in ref[:bus])
 
     nconds = Dict(l => length(branch["f_connections"]) for (l,branch) in ref[:branch])
-    cr = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="cr_$((l,i,j))", start = _PMD.comp_start_value(ref[:branch][l], "cr_start", c, 0.0) ) for (l,i,j) in ref[:arcs_branch]) # , lower_bound = -ref[:branch][l]["c_rating_a"], upper_bound = ref[:branch][l]["c_rating_a"]
-    ci = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="ci_$((l,i,j))", start = _PMD.comp_start_value(ref[:branch][l], "ci_start", c, 0.0) ) for (l,i,j) in ref[:arcs_branch]) 
-    csr = Dict(l => JuMP.@variable(model, [c in 1:nconds[l]], base_name="csr_$(l)", start = _PMD.comp_start_value(ref[:branch][l], "csr_start", c, 0.0)) for (l,i,j) in ref[:arcs_branch])
-    csi = Dict(l => JuMP.@variable(model, [c in 1:nconds[l]], base_name="csi_$(l)", start = _PMD.comp_start_value(ref[:branch][l], "csi_start", c, 0.0)) for (l,i,j) in ref[:arcs_branch])
+    cr = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="cr_$((l,i,j))", start = PMD.comp_start_value(ref[:branch][l], "cr_start", c, 0.0) ) for (l,i,j) in ref[:arcs_branch]) # , lower_bound = -ref[:branch][l]["c_rating_a"], upper_bound = ref[:branch][l]["c_rating_a"]
+    ci = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="ci_$((l,i,j))", start = PMD.comp_start_value(ref[:branch][l], "ci_start", c, 0.0) ) for (l,i,j) in ref[:arcs_branch]) 
+    csr = Dict(l => JuMP.@variable(model, [c in 1:nconds[l]], base_name="csr_$(l)", start = PMD.comp_start_value(ref[:branch][l], "csr_start", c, 0.0)) for (l,i,j) in ref[:arcs_branch])
+    csi = Dict(l => JuMP.@variable(model, [c in 1:nconds[l]], base_name="csi_$(l)", start = PMD.comp_start_value(ref[:branch][l], "csi_start", c, 0.0)) for (l,i,j) in ref[:arcs_branch])
     cr_bus = Dict{Tuple{Int,Int,Int}, Any}()
     ci_bus = Dict{Tuple{Int,Int,Int}, Any}()
 
     int_dim = Dict(i => _infer_int_dim_unit(gen, false) for (i,gen) in ref[:gen])
-    crg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="crg_$(i)", start = _PMD.comp_start_value(ref[:gen][i], "crg_start", c, 0.0)) for i in keys(ref[:gen]))
-    cig = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="cig_$(i)", start = _PMD.comp_start_value(ref[:gen][i], "cig_start", c, 0.0)) for i in keys(ref[:gen]))
-    pg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="pg_$(i)", start = _PMD.comp_start_value(ref[:gen][i], "pg_start", c, 0.0)) for i in keys(ref[:gen]))
-    qg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="qg_$(i)", start = _PMD.comp_start_value(ref[:gen][i], "qg_start", c, 0.0)) for i in keys(ref[:gen]))
+    crg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="crg_$(i)", start = PMD.comp_start_value(ref[:gen][i], "crg_start", c, 0.0)) for i in keys(ref[:gen]))
+    cig = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="cig_$(i)", start = PMD.comp_start_value(ref[:gen][i], "cig_start", c, 0.0)) for i in keys(ref[:gen]))
+    pg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="pg_$(i)", start = PMD.comp_start_value(ref[:gen][i], "pg_start", c, 0.0)) for i in keys(ref[:gen]))
+    qg = Dict(i => JuMP.@variable(model, [c in 1:int_dim[i]], base_name="qg_$(i)", start = PMD.comp_start_value(ref[:gen][i], "qg_start", c, 0.0)) for i in keys(ref[:gen]))
     crg_bus = Dict{Int, Any}()
     cig_bus = Dict{Int, Any}()
     # # store active and reactive power expressions for use in objective + post processing
@@ -36,16 +36,16 @@ function IVR_EN(model, ref)
     # var(pm, nw)[:qg] = Dict{Int, Any}()
 
     int_dim = Dict(l => _infer_int_dim_transformer(trans, false) for (l,trans) in ref[:transformer])
-    crt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="crt_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "crt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
-    cit = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="cit_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "cit_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
-    pt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="pt_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "pt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
-    qt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="qt_$((l,i,j))", start = _PMD.comp_start_value(ref[:transformer][l], "qt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
+    crt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="crt_$((l,i,j))", start = PMD.comp_start_value(ref[:transformer][l], "crt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
+    cit = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="cit_$((l,i,j))", start = PMD.comp_start_value(ref[:transformer][l], "cit_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
+    pt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="pt_$((l,i,j))", start = PMD.comp_start_value(ref[:transformer][l], "pt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
+    qt = Dict((l,i,j) => JuMP.@variable(model, [c in 1:int_dim[l]], base_name="qt_$((l,i,j))", start = PMD.comp_start_value(ref[:transformer][l], "qt_start", c, 0.0) ) for (l,i,j) in ref[:arcs_transformer])
     crt_bus = Dict{Tuple{Int,Int,Int}, Any}()
     cit_bus = Dict{Tuple{Int,Int,Int}, Any}()
 
     nconds = Dict(l => length(switch["f_connections"]) for (l,switch) in ref[:switch])
-    crsw = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="crsw_$((l,i,j))", start = _PMD.comp_start_value(ref[:switch][l], "crsw_start", c, 0.0)) for (l,i,j) in ref[:arcs_switch]) # , lower_bound = -ref[:switch][l]["current_rating"], upper_bound = ref[:switch][l]["current_rating"]
-    cisw = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="cisw_$((l,i,j))", start = _PMD.comp_start_value(ref[:switch][l], "cisw_start", c, 0.0)) for (l,i,j) in ref[:arcs_switch]) # , lower_bound = -ref[:switch][l]["current_rating"], upper_bound = ref[:switch][l]["current_rating"]
+    crsw = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="crsw_$((l,i,j))", start = PMD.comp_start_value(ref[:switch][l], "crsw_start", c, 0.0)) for (l,i,j) in ref[:arcs_switch]) # , lower_bound = -ref[:switch][l]["current_rating"], upper_bound = ref[:switch][l]["current_rating"]
+    cisw = Dict((l,i,j) => JuMP.@variable(model, [c in 1:nconds[l]], base_name="cisw_$((l,i,j))", start = PMD.comp_start_value(ref[:switch][l], "cisw_start", c, 0.0)) for (l,i,j) in ref[:arcs_switch]) # , lower_bound = -ref[:switch][l]["current_rating"], upper_bound = ref[:switch][l]["current_rating"]
     crsw_bus = Dict{Tuple{Int,Int,Int}, Any}()
     cisw_bus = Dict{Tuple{Int,Int,Int}, Any}()
     
@@ -131,7 +131,7 @@ function IVR_EN(model, ref)
         qmax = get(generator, "qmax", fill( Inf, N))
 
         # constraint_mc_generator_current(pm, id)
-        if configuration==_PMD.WYE || length(pmin)==1 || nphases==1
+        if configuration==PMD.WYE || length(pmin)==1 || nphases==1
             phases = connections[1:end-1]
             n      = connections[end]
 
@@ -157,9 +157,9 @@ function IVR_EN(model, ref)
                 end
             end
 
-        else ## configuration==_PMD.DELTA
+        else ## configuration==PMD.DELTA
 
-            Md =_PMD._get_delta_transformation_matrix(length(connections))
+            Md =PMD._get_delta_transformation_matrix(length(connections))
             crg_bus[id] = _merge_bus_flows(model, Md'*crg[id], connections)
             cig_bus[id] = _merge_bus_flows(model, Md'*cig[id], connections)
             _merge_bus_flows(model, Md'*crg[id], connections)
@@ -266,23 +266,23 @@ function IVR_EN(model, ref)
         configuration = load["configuration"]
         connections = load["connections"]
         load_model = load["model"]
-        a, alpha, b, beta = _PMD._load_expmodel_params(load, bus)
+        a, alpha, b, beta = PMD._load_expmodel_params(load, bus)
 
         int_dim = _infer_int_dim_unit(load, false)
-        if configuration==_PMD.WYE || int_dim==1
+        if configuration==PMD.WYE || int_dim==1
             phases = connections[1:end-1]
             n      = connections[end]
 
             vr_pn = [vr[bus_id][p]-vr[bus_id][n] for p in phases]
             vi_pn = [vi[bus_id][p]-vi[bus_id][n] for p in phases]
 
-            if load_model==_PMD.POWER
+            if load_model==PMD.POWER
                 pd = a
                 qd = b
-            elseif load_model==_PMD.IMPEDANCE
+            elseif load_model==PMD.IMPEDANCE
                 pd = a .* (vr_pn.^2 .+ vi_pn.^2)
                 qd = b .* (vr_pn.^2 .+ vi_pn.^2)
-            elseif load_model==_PMD.CURRENT
+            elseif load_model==PMD.CURRENT
                 pd = JuMP.@variable(model, [c in 1:int_dim])
                 qd = JuMP.@variable(model, [c in 1:int_dim])
                 JuMP.@constraint(model, pd.^2 .== a.^2 .* (vr_pn.^2 .+ vi_pn.^2))
@@ -319,20 +319,20 @@ function IVR_EN(model, ref)
             idxs = 1:P
             idxs_prev = [idxs[end], idxs[1:end-1]...]
             
-            # Md = _PMD._get_delta_transformation_matrix(length(connections))
+            # Md = PMD._get_delta_transformation_matrix(length(connections))
             # vrd = Md*[vr[p] for p in phases]
             # vid = Md*[vi[p] for p in phases]
 
             vrd = [vr[bus_id][c]-vr[bus_id][d] for (c,d) in zip(phases,phases_next)]
             vid = [vi[bus_id][c]-vi[bus_id][d] for (c,d) in zip(phases,phases_next)]
 
-            if load_model==_PMD.POWER
+            if load_model==PMD.POWER
                 pd = a
                 qd = b
-            elseif load_model==_PMD.IMPEDANCE
+            elseif load_model==PMD.IMPEDANCE
                 pd = a .* (vrd.^2 .+ vid.^2)
                 qd = b .* (vrd.^2 .+ vid.^2)
-            elseif load_model==_PMD.CURRENT
+            elseif load_model==PMD.CURRENT
                 pd = JuMP.@variable(model, [c in 1:int_dim])
                 qd = JuMP.@variable(model, [c in 1:int_dim])
                 JuMP.@constraint(model, pd[id].^2 .== a.^2 .* (vrd.^2 .+ vid.^2))
@@ -368,7 +368,7 @@ function IVR_EN(model, ref)
         t_connections = transformer["t_connections"]
         tm_set = transformer["tm_set"]
         tm_fixed = fix_taps ? ones(Bool, length(tm_set)) : transformer["tm_fix"]
-        tm_scale = _PMD.calculate_tm_scale(transformer, ref[:bus][f_bus], ref[:bus][t_bus])
+        tm_scale = PMD.calculate_tm_scale(transformer, ref[:bus][f_bus], ref[:bus][t_bus])
         pol = transformer["polarity"]
         sm_ub = transformer["sm_ub"]
 
@@ -382,7 +382,7 @@ function IVR_EN(model, ref)
         crt_to = crt[t_idx]
         cit_to = cit[t_idx]
 
-        if configuration == _PMD.WYE  || length(crt_fr)==1
+        if configuration == PMD.WYE  || length(crt_fr)==1
             ### constraint_mc_transformer_voltage_yy
             vr_fr_P = [vr_fr[c] for c in f_connections[1:end-1]]
             vi_fr_P = [vi_fr[c] for c in f_connections[1:end-1]]
@@ -410,7 +410,7 @@ function IVR_EN(model, ref)
             crt_bus[t_idx] = _merge_bus_flows(model, [crt_to..., -sum(crt_to)], t_connections)
             cit_bus[t_idx] = _merge_bus_flows(model, [cit_to..., -sum(cit_to)], t_connections)
 
-        elseif configuration == _PMD.DELTA
+        elseif configuration == PMD.DELTA
             ### constraint_mc_transformer_voltage_dy
             vr_fr_P = [vr_fr[c] for c in f_connections]
             vi_fr_P = [vi_fr[c] for c in f_connections]
@@ -422,7 +422,7 @@ function IVR_EN(model, ref)
             tm = [tm_fixed[idx] ? tm_set[idx] : var(pm, nw, :tap, trans_id)[idx] for idx in 1:length(tm_fixed)]
             scale = (tm_scale*pol).*tm_set
             n_phases = length(tm)
-            Md = _PMD._get_delta_transformation_matrix(n_phases)
+            Md = PMD._get_delta_transformation_matrix(n_phases)
             JuMP.@constraint(model, Md*vr_fr_P .== scale.*(vr_to_P .- vr_to_n))
             JuMP.@constraint(model, Md*vi_fr_P .== scale.*(vi_to_P .- vi_to_n))
 
@@ -431,7 +431,7 @@ function IVR_EN(model, ref)
             tm = [tm_fixed[idx] ? tm_set[idx] : var(pm, nw, :tap, trans_id)[idx] for idx in 1:length(tm_fixed)]
             scale = (tm_scale*pol).*tm_set
             n_phases = length(tm)
-            Md = _PMD._get_delta_transformation_matrix(n_phases)
+            Md = PMD._get_delta_transformation_matrix(n_phases)
             JuMP.@constraint(model, scale.*crt_fr .+ crt_to .== 0)
             JuMP.@constraint(model, scale.*cit_fr .+ cit_to .== 0)
             crt_bus[f_idx] = _merge_bus_flows(model, Md'*crt_fr, f_connections)
@@ -444,13 +444,13 @@ function IVR_EN(model, ref)
         end
 
         ### constraint_mc_transformer_thermal_limit
-        if configuration==_PMD.WYE || length(crt_fr)==1
+        if configuration==PMD.WYE || length(crt_fr)==1
             P_fr = f_connections[1:end-1]
             n_fr = f_connections[end]
             vrt_fr = [vr_fr[p]-vr_fr[n_fr] for p in P_fr]
             vit_fr = [vi_fr[p]-vi_fr[n_fr] for p in P_fr]
-        elseif configuration==_PMD.DELTA && length(crt_fr)==3
-            M = _PMD._get_delta_transformation_matrix(3)
+        elseif configuration==PMD.DELTA && length(crt_fr)==3
+            M = PMD._get_delta_transformation_matrix(3)
             vrt_fr = M*[vr_to[p] for p in f_connections]
             vit_fr = M*[vi_to[p] for p in f_connections]
         else

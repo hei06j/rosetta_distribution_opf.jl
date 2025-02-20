@@ -20,7 +20,7 @@ highs_solver = optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false
 juniper_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>ipopt_solver, "mip_solver" => highs_solver)
 
 """ TODO
-- assymetrical alpha's 
+- assymetrical alpha's
 - change the testcase
 - timeseries analysis
 """
@@ -64,8 +64,7 @@ function add_solar_gen!(data_math, dss_includes_gens; counter=100)
 end
 
 
-function run_inverter_case(data_eng, setting)
-
+function build_inverter_case(data_eng, setting)
     @assert setting["conventional"] + setting["reconfigurable"] + setting["ideal"] == 1   "Choose only one type of inverter: conventional, reconfigurable, or ideal"
 
     ### transform data_eng to data_math
@@ -79,6 +78,11 @@ function run_inverter_case(data_eng, setting)
     end
     # data_math["branch"]["2"]["c_rating_a"] = ones(4)
 
+    return data_math
+end
+
+
+function run_inverter_case(data_math, setting)
     ### build optimisation model and solve opf
     PMD.add_start_vrvi!(data_math)
     model = PMD.instantiate_mc_model(data_math, PMD.IVRENPowerModel, RPMD.build_mc_opf_mx; setting=setting)
@@ -91,8 +95,9 @@ function run_inverter_case(data_eng, setting)
 
     result_summary = RPMD.get_solutions(model, result)
 
-    return data_math, result, result_summary
+    return result, result_summary
 end
+
 
 ##
 ### parse data
@@ -105,8 +110,8 @@ data_eng["voltage_source"]["source"]["xs"] *= 0
 ## ##################### Conventional inverter #####################
 ### 4-leg inverters: set conventional, reconfigurable and ideal true or false
 setting = Dict("conventional"=>true, "reconfigurable" => false, "ideal" => false, "dc_link" => true)
-
-data_math_conv, result_conv, result_conv_summary = run_inverter_case(data_eng, setting)
+data_math_conv = build_inverter_case(data_eng, setting)
+result_conv, result_conv_summary = run_inverter_case(data_math_conv, setting)
 
 result_conv["solution"]["gen"]["1"]
 round.(abs.(result_conv_summary["c_source_branch_012"]), digits=4)
@@ -123,8 +128,8 @@ round.(abs.(result_conv["solution"]["branch"]["2"]["cr_fr"] .+ im*result_conv["s
 ## ##################### Reconfigurable inverter #####################
 ### 4-leg inverters: set conventional, reconfigurable and ideal true or false
 setting = Dict("conventional"=>false, "reconfigurable" => true, "ideal" => false, "dc_link" => true)
-
-data_math_mx, result_mx, result_mx_summary = run_inverter_case(data_eng, setting)
+data_math_mx = build_inverter_case(data_eng, setting)
+result_mx, result_mx_summary = run_inverter_case(data_math_mx, setting)
 
 result_mx["solution"]["gen"]["1"]
 round.(abs.(result_mx_summary["c_source_branch_012"]), digits=4)
@@ -135,8 +140,8 @@ round.(abs.(result_mx["solution"]["branch"]["2"]["cr_fr"] .+ im*result_mx["solut
 ## ##################### Ideal inverter #####################
 ### 4-leg inverters: set conventional, reconfigurable and ideal true or false
 setting = Dict("conventional"=>false, "reconfigurable" => false, "ideal" => true, "dc_link" => true)
-
-data_math_ideal, result_ideal, result_ideal_summary = run_inverter_case(data_eng, setting)
+data_math_ideal = build_inverter_case(data_eng, setting)
+result_ideal, result_ideal_summary = run_inverter_case(data_math_ideal, setting)
 
 result_ideal["solution"]["gen"]["1"]
 round.(abs.(result_ideal_summary["c_source_branch_012"]), digits=4)

@@ -1,0 +1,67 @@
+! Original network data and time series from ENWL - Low Voltage Network Solutions project (in OpenDSS format)
+!   https://www.enwl.co.uk/future-energy/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/
+
+! Adapted with length-normalized four-wire impedance data from: 
+!   Urquhart, Andrew J., and Murray Thomson. 2019. “Cable Impedance Data”. figshare. https://hdl.handle.net/2134/15544.
+!   Creative Commons Attribution-NonCommercial 3.0 Unported License.
+
+! Adaptation process described in  
+!   'Distribution Network Modeling: From Simulation Towards Optimization, Sander Claeys, Phd Dissertation, KU Leuven, Belgium 2021
+
+! Impedance transformations described in 
+!   Frederik Geth, Rahmat Heidari, and Arpan Koirala. 2022. Computational analysis of impedance transformations for four-wire power networks with sparse neutral grounding. In Proceedings of the Thirteenth ACM International Conference on Future Energy Systems (e-Energy '22). Association for Computing Machinery, New York, NY, USA, 105–113. https://doi.org/10.1145/3538637.3538844
+
+! This data is otherwise licensed under [CC BY 4.0  Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/deed.en).
+! The data can be retrieved from https://data.csiro.au/
+
+Clear
+Set DefaultBaseFreq=50
+/*
+New Circuit.ENWL_network_1_Feeder_1_4wire BasekV=0.416 pu=1.00 ISC3=100000 ISC1=100000
+New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
+*/
+
+! update the definition of the circuit to be a full unbalanced circuit
+New Circuit.ENWL_network_1_Feeder_1_4wire basekV=0.23 phases=3 ISC3=100000 ISC1=100000
+edit vsource.source pu=1.0918 angle=0 phases=1
+New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
+
+new vsource.ENWL_network_1_Feeder_1_4wire_phaseB bus1=sourcebus.2 BasekV=0.23 pu=1.0445 angle=-121.511 phases=1 ISC3=100000 ISC1=100000
+new vsource.ENWL_network_1_Feeder_1_4wire_phaseC bus1=sourcebus.3 BasekV=0.23 pu=1.0445 angle=121.511 phases=1 ISC3=100000 ISC1=100000
+
+! 11/416 V for +4% voltage boost
+!New Transformer.TR1 Buses=[SourceBus 1] Conns=[Delta Wye] kVs=[11 0.416] kVAs=[150 150] XHL=6 sub=y %R=0.0001
+!New Reactor.Grounding phases=1 bus1=1.4 bus2=sourcebus.0 R=0.0 X=1E-10
+
+Redirect LineCode.txt
+Redirect Lines.txt
+!Redirect lines_with_tfmr.txt
+Redirect Loads.txt
+
+
+! put in the induction motors
+edit load.load28 bus1=556.1.4 kw=4 pf=0.85
+edit load.load13 bus1=276.1.4 kw=4 pf=0.85
+edit load.load53 bus1=899.1.4 kw=8 pf=0.85
+
+new load.load28b bus1=556.2.4 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load13b bus1=276.2.4 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load53b bus1=899.2.4 phases=1 kv=0.23 kw=8 pf=0.85
+
+new load.load28c bus1=556.3.4 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load13c bus1=276.3.4 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load53v bus1=899.3.4 phases=1 kv=0.23 kw=8 pf=0.85
+
+set voltagebases=(11.0,0.416)
+
+calcv
+
+buscoords XY_Position.csv
+!new energymeter.m1 element=transformer.tr1
+new energymeter.m1 element=line.line0
+
+Set mode=Snap
+Solve
+!Closedi
+
+!plot

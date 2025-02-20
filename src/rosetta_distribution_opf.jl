@@ -5,16 +5,16 @@ module rosetta_distribution_opf
     import InfrastructureModels: optimize_model!, @im_fields, nw_id_default, ismultinetwork, update_data!
     import PowerModelsDistribution
     import LinearAlgebra: diag, diagm
+    import LaTeXStrings: latexstring, text
 
-    const _IM = InfrastructureModels
-    const _PMD = PowerModelsDistribution
-
+    const IM = InfrastructureModels
+    const PMD = PowerModelsDistribution
+\
     using GraphPlot
     using Graphs
     const _GP = GraphPlot
     const _G = Graphs
 
-    
     import Plots
     export build_mc_opf
 
@@ -36,6 +36,7 @@ module rosetta_distribution_opf
     include("./util/visualisation.jl")
     
 
+    include("./inverters/variable.jl")
     include("./inverters/constraint_template_en.jl")
     include("./inverters/en_ivr.jl")
     include("./inverters/objective.jl")

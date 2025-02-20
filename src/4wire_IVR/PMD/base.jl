@@ -1,11 +1,11 @@
 # Helper functions for AbstractPowerModel `var` access.
-var(pm::_PMD.AbstractUnbalancedPowerModel, nw::Int=nw_id_default) = _IM.var(pm, _PMD.pmd_it_sym, nw)
-var(pm::_PMD.AbstractUnbalancedPowerModel, nw::Int, key::Symbol) = _IM.var(pm, _PMD.pmd_it_sym, nw, key)
-var(pm::_PMD.AbstractUnbalancedPowerModel, nw::Int, key::Symbol, idx::Any) = _IM.var(pm, _PMD.pmd_it_sym, nw, key, idx)
-var(pm::_PMD.AbstractUnbalancedPowerModel, key::Symbol; nw::Int = nw_id_default) = _IM.var(pm, _PMD.pmd_it_sym, key; nw = nw)
-var(pm::_PMD.AbstractUnbalancedPowerModel, key::Symbol, idx::Any; nw::Int = nw_id_default) = _IM.var(pm, _PMD.pmd_it_sym, key, idx; nw = nw)
+var(pm::PMD.AbstractUnbalancedPowerModel, nw::Int=nw_id_default) = IM.var(pm, PMD.pmd_it_sym, nw)
+var(pm::PMD.AbstractUnbalancedPowerModel, nw::Int, key::Symbol) = IM.var(pm, PMD.pmd_it_sym, nw, key)
+var(pm::PMD.AbstractUnbalancedPowerModel, nw::Int, key::Symbol, idx::Any) = IM.var(pm, PMD.pmd_it_sym, nw, key, idx)
+var(pm::PMD.AbstractUnbalancedPowerModel, key::Symbol; nw::Int = nw_id_default) = IM.var(pm, PMD.pmd_it_sym, key; nw = nw)
+var(pm::PMD.AbstractUnbalancedPowerModel, key::Symbol, idx::Any; nw::Int = nw_id_default) = IM.var(pm, PMD.pmd_it_sym, key, idx; nw = nw)
 
-# ref = _IM.build_ref(data_math, _PMD.ref_add_core!, _PMD._pmd_global_keys, _PMD.pmd_it_name)[:it][:pmd][:nw][0]
+# ref = IM.build_ref(data_math, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
 
 """
 	function set_lower_bound(
@@ -76,7 +76,7 @@ Detection of whether a constraint should be NL or not"
 """
 macro smart_constraint(model, vars, expr)
     esc(quote
-        if _PMD._has_nl_expression($vars)
+        if PMD._has_nl_expression($vars)
             JuMP.@NLconstraint($model, $expr)
         else
             JuMP.@constraint($model, $expr)
@@ -88,7 +88,7 @@ end
 
 "infer the internal dimension of a winding, load or generator based on the connections and the configuration"
 function _infer_int_dim(connections::Vector, configuration, kron_reduced)
-    if configuration==_PMD.WYE
+    if configuration==PMD.WYE
         if kron_reduced
             return length(connections)
         else

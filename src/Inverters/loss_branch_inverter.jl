@@ -1,4 +1,4 @@
-function add_inverter_losses!(data_math, gen_id; reconfigurable=false, GFM=false, three_wire=false, dc_link=true)
+function add_inverter_losses!(data_math, gen_id; c_rating_a=0, reconfigurable=false, GFM=false, three_wire=false, dc_link=true)
     gen = data_math["gen"]["$gen_id"]
     old_gen_bus = copy(gen["gen_bus"])
     new_gen_bus = length(data_math["bus"]) + 1
@@ -35,17 +35,40 @@ function add_inverter_losses!(data_math, gen_id; reconfigurable=false, GFM=false
         # end
     end
     
+    
+    sbase = data_math["settings"]["sbase"]                          # p.u.
+    sbace_factor = data_math["settings"]["power_scale_factor"]      # 
+    vbase = [v for v in values(data_math["settings"]["vbases_default"])][1]
+    vbase_factor = data_math["settings"]["voltage_scale_factor"]
+    # vbase = 0.2309      # [kV]  data_math["settings"]["vbases_default"]["5"]
+    Ibase = (sbase * sbace_factor) / (vbase * vbase_factor)  #[kA]
+    zbase = (vbase * vbase_factor)^2 / (sbase * sbace_factor)
+    vbase_max = vbase*1.1  # [V]
+
     Rf = 0.015
     Lf = 0.42E-3
     Cf = 0.33E-9
-    zbase = 230.94^2 / 1000
     new_branch_id = length(data_math["branch"]) + 1
-    data_math["branch"]["$new_branch_id"] = deepcopy(data_math["branch"]["$(new_branch_id-1)"])
+    data_math["branch"]["$new_branch_id"] = Dict{String, Any}()
+    data_math["branch"]["$new_branch_id"]["rate_a"] = [1, 1, 1, 1]*1000 #[Inf, Inf, Inf, Inf]
+    data_math["branch"]["$new_branch_id"]["rate_a"] = [1, 1, 1, 1]*1000 #[Inf, Inf, Inf, Inf]
+    data_math["branch"]["$new_branch_id"]["rate_b"] = [1, 1, 1, 1]*1000 #[Inf, Inf, Inf, Inf]
+    data_math["branch"]["$new_branch_id"]["vbase"] = 0.23094
+    data_math["branch"]["$new_branch_id"]["source_id"] = "pvsystem_$gen_id"
+    data_math["branch"]["$new_branch_id"]["br_status"] = 1
+    data_math["branch"]["$new_branch_id"]["angmin"] = [-1.0472, -1.0472, -1.0472, -1.0472]
+    data_math["branch"]["$new_branch_id"]["angmax"] = [1.0472, 1.0472, 1.0472, 1.0472]
+    data_math["branch"]["$new_branch_id"]["f_connections"] = [1, 2, 3, 4]
+    data_math["branch"]["$new_branch_id"]["t_connections"] = [1, 2, 3, 4]
+    data_math["branch"]["$new_branch_id"]["g_fr"] = zeros(4,4)
+    data_math["branch"]["$new_branch_id"]["g_to"] = zeros(4,4)
+
     data_math["branch"]["$new_branch_id"]["index"] = new_branch_id
     data_math["branch"]["$new_branch_id"]["name"] = "inverter_branch_$gen_id"
     data_math["branch"]["$new_branch_id"]["br_r"] = diagm(Rf/zbase * ones(4))
     data_math["branch"]["$new_branch_id"]["br_x"] = diagm(Lf*2*pi*50/zbase * ones(4))
-    data_math["branch"]["$new_branch_id"]["b_to"] = diagm(Cf*2*pi*50*zbase * ones(4))
+    data_math["branch"]["$new_branch_id"]["b_to"] = 0*diagm(Cf*2*pi*50*zbase * ones(4))  # TODO set this to zero for now, it should not be zero in reality.
+    data_math["branch"]["$new_branch_id"]["b_fr"] = zeros(4,4)
     data_math["branch"]["$new_branch_id"]["f_bus"] = new_gen_bus
     data_math["branch"]["$new_branch_id"]["t_bus"] = old_gen_bus
 
@@ -55,9 +78,11 @@ function add_inverter_losses!(data_math, gen_id; reconfigurable=false, GFM=false
         gen["m_legs"] = 8
     end
 
-    if dc_link 
+    if dc_link
         gen["pdcmin"] = -Inf
-        gen["pdcmax"] = 1
+        gen["pdcmax"] = Inf
+        # data_math["branch"]["$new_branch_id"]["pdcmin"] = -Inf
+        # data_math["branch"]["$new_branch_id"]["pdcmax"] = Inf
     end
 
     # if three_wire 
@@ -68,17 +93,17 @@ function add_inverter_losses!(data_math, gen_id; reconfigurable=false, GFM=false
     #     data_math["branch"]["$new_branch_id"]["b_to"] = diagm(Cf*2*pi*50*zbase * ones(4))
     # end
 
-
-    Sbase = data_math["settings"]["sbase"]                       # MVA p.u.
-    Sbace_Factor = data_math["settings"]["power_scale_factor"]   # 
-    Vbase = 0.2309      # [kV]  data_math["settings"]["vbases_default"]["5"]
-    Vbase_Factor = data_math["settings"]["voltage_scale_factor"]
-    Ibase = (Sbase * Sbace_Factor) / (Vbase * Vbase_Factor)  #[kA]
-    vbase_max = 253     # [V]
-
-    pmax = gen["pmax"] * (Sbase * Sbace_Factor)  
-    c_rating_a = pmax / vbase_max / Ibase
-    data_math["branch"]["$new_branch_id"]["c_rating_a"] = [c_rating_a ; c_rating_a[1]]
+    ### If the actual c_rating_a is not given, use the power rating
+    if c_rating_a == 0
+        pmax = gen["pmax"] * (sbase * sbace_factor)
+        c_rating_a = pmax / vbase_max
+        @show c_rating_a, pmax, gen["pmax"]
+    end
+    c_rating_a_pu = c_rating_a / Ibase
+    # @show c_rating_a_pu, c_rating_a
+    data_math["branch"]["$new_branch_id"]["c_rating_a"] = [c_rating_a_pu ; c_rating_a_pu[1]] * 5  # TODO the 5 multiplier is added to relax this limit, but need to be revisited
+    data_math["branch"]["$new_branch_id"]["c_rating_b"] = data_math["branch"]["$new_branch_id"]["c_rating_a"]
+    data_math["branch"]["$new_branch_id"]["c_rating_c"] = data_math["branch"]["$new_branch_id"]["c_rating_a"]
 
     return new_gen_bus, new_branch_id
 end

@@ -81,7 +81,7 @@ function solve_IVR_EN_vec(model, ref)
         qmax = get(generator, "qmax", fill( Inf, N))
 
         # constraint_mc_generator_current(pm, id)
-        if configuration==_PMD.WYE || length(pmin)==1 || nphases==1
+        if configuration==PMD.WYE || length(pmin)==1 || nphases==1
             phases = connections[1:end-1]
             n = connections[end]
 
@@ -116,9 +116,9 @@ function solve_IVR_EN_vec(model, ref)
             #     end
             # end
 
-        else ## configuration==_PMD.DELTA
+        else ## configuration==PMD.DELTA
 
-            Md = _PMD._get_delta_transformation_matrix(length(connections))
+            Md = PMD._get_delta_transformation_matrix(length(connections))
             crg_bus[id] = JuMP.Containers.DenseAxisArray(Md'*Vector{JuMP.AffExpr}(crg[connections,id]), connections)
             cig_bus[id] = JuMP.Containers.DenseAxisArray(Md'*Vector{JuMP.AffExpr}(cig[connections,id]), connections)
 
@@ -213,23 +213,23 @@ function solve_IVR_EN_vec(model, ref)
         configuration = load["configuration"]
         connections = load["connections"]
         load_model = load["model"]
-        a, alpha, b, beta = _PMD._load_expmodel_params(load, bus)
+        a, alpha, b, beta = PMD._load_expmodel_params(load, bus)
 
         int_dim = _infer_int_dim_unit(load, false)
-        if configuration==_PMD.WYE || int_dim==1
+        if configuration==PMD.WYE || int_dim==1
             phases = connections[1:end-1]
             n = connections[end]
 
             vr_pn = Vector{JuMP.AffExpr}(vr[phases,bus_id] .- vr[n,bus_id])
             vi_pn = Vector{JuMP.AffExpr}(vi[phases,bus_id] .- vi[n,bus_id])
 
-            if load_model==_PMD.POWER
+            if load_model==PMD.POWER
                 pd = a
                 qd = b
-            elseif load_model==_PMD.IMPEDANCE
+            elseif load_model==PMD.IMPEDANCE
                 pd = a .* (vr_pn.^2 .+ vi_pn.^2)
                 qd = b .* (vr_pn.^2 .+ vi_pn.^2)
-            elseif load_model==_PMD.CURRENT
+            elseif load_model==PMD.CURRENT
                 pd = JuMP.@variable(model, [c in 1:int_dim])
                 qd = JuMP.@variable(model, [c in 1:int_dim])
                 JuMP.@constraint(model, pd.^2 .== a.^2 .* (vr_pn.^2 .+ vi_pn.^2))
@@ -262,13 +262,13 @@ function solve_IVR_EN_vec(model, ref)
             vrd = Vector{JuMP.AffExpr}(vr[phases,bus_id]) .- Vector{JuMP.AffExpr}(vr[phases_next,bus_id])
             vid = Vector{JuMP.AffExpr}(vi[phases,bus_id]) .- Vector{JuMP.AffExpr}(vi[phases_next,bus_id])
 
-            if load_model==_PMD.POWER
+            if load_model==PMD.POWER
                 pd = a
                 qd = b
-            elseif load_model==_PMD.IMPEDANCE
+            elseif load_model==PMD.IMPEDANCE
                 pd = a .* (vrd.^2 .+ vid.^2)
                 qd = b .* (vrd.^2 .+ vid.^2)
-            elseif load_model==_PMD.CURRENT
+            elseif load_model==PMD.CURRENT
                 pd = JuMP.@variable(model, [c in 1:int_dim])
                 qd = JuMP.@variable(model, [c in 1:int_dim])
                 JuMP.@constraint(model, pd[id].^2 .== a.^2 .* (vrd.^2 .+ vid.^2))

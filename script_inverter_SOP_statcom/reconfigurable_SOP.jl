@@ -14,7 +14,7 @@ using LinearAlgebra
 import LinearAlgebra: diag, diagm
 using LaTeXStrings
 
-const _PMD = PowerModelsDistribution
+const PMD = PowerModelsDistribution
 const RPMD = rosetta_distribution_opf
 const IM = InfrastructureModels
 
@@ -36,15 +36,15 @@ juniper_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>ipopt
 # set_attribute(model, "hsllib", HSL_jll.libhsl_path)
 # set_attribute(model, "linear_solver", "ma86")
 
-data_path = "./data/case5_gen_3ph_wye_v1.dss"
-dss_includes_gens = true
-sop_branch_id = "6"
+# data_path = "./data/case5_gen_3ph_wye_v1.dss"
+# dss_includes_gens = true
+# sop_branch_id = "6"
 
-# # data_path = "./data/ENWL_4w_Network1_Feeders1and2/Master.dss"
-# # data_path = "./data/European_LV_network/Master.dss"
-# data_path = "./data/ENWL_4w_Network1_Feeder1/Master.dss"
-# dss_includes_gens = false
-# sop_branch_id = "907"
+# data_path = "./data/ENWL_4w_Network1_Feeders1and2/Master.dss"
+# data_path = "./data/European_LV_network/Master.dss"
+data_path = "./data/ENWL_4w_Network1_Feeder1/Master.dss"
+dss_includes_gens = false
+sop_branch_id = "907"
 
 function add_solar_gen!(data_math, dss_includes_gens; counter=20)
     if !dss_includes_gens
@@ -80,12 +80,12 @@ function add_solar_gen!(data_math, dss_includes_gens; counter=20)
 end
 
 
-function run_sop_case(data_eng, setting)
+function build_sop_case(data_eng, setting)
 
     @assert setting["conventional"] + setting["reconfigurable"] + setting["ideal"] == 1   "Choose only one type of SOP: conventional, reconfigurable, or ideal"
 
     ### transform data_eng to data_math
-    data_math = _PMD.transform_data_model(data_eng, kron_reduce=false, phase_project=false)
+    data_math = PMD.transform_data_model(data_eng, kron_reduce=false, phase_project=false)
 
     ### if the case does not have two pv gens to replace with a sop, add two pv gens to the network
     sop_gen_ids = add_solar_gen!(data_math, dss_includes_gens)
@@ -97,18 +97,28 @@ function run_sop_case(data_eng, setting)
     ### replace the pv gens by a sop, and add the branch
     RPMD.add_sop_inverter_losses!(data_math, sop_gen_ids[1], sop_gen_ids[2]; reconfigurable=setting["reconfigurable"])
 
-    ### build optimisation model and solve opf
-    _PMD.add_start_vrvi!(data_math)
-    model = _PMD.instantiate_mc_model(data_math, _PMD.IVRENPowerModel, RPMD.build_mc_opf_mx_sop; setting=setting)
-    result = _PMD.optimize_model!(model, optimizer=juniper_solver)
-    # results_mx_dict = RPMD.get_solutions(model, result)
+    return data_math
+end
 
+
+function run_sop_case(data_math, setting)
+    ### build optimisation model and solve opf
+    PMD.add_start_vrvi!(data_math)
+    model = PMD.instantiate_mc_model(data_math, PMD.IVRENPowerModel, RPMD.build_mc_opf_mx_sop; setting=setting)
+    # result = PMD.optimize_model!(model, optimizer=juniper_solver)
+    # results_mx_dict = RPMD.get_solutions(model, result)
+    if setting["conventional"] || setting["ideal"]
+        result = PMD.optimize_model!(model, optimizer=ipopt_solver)
+    elseif setting["reconfigurable"]
+        result = PMD.optimize_model!(model, optimizer=juniper_solver)
+    end
     return result
 end
 
+
 ##
 ### parse data
-data_eng = _PMD.parse_file(data_path, transformations=[_PMD.transform_loops!])
+data_eng = PMD.parse_file(data_path, transformations=[PMD.transform_loops!])
 data_eng["settings"]["sbase_default"] = 1
 data_eng["voltage_source"]["source"]["rs"] *= 0
 data_eng["voltage_source"]["source"]["xs"] *= 0
@@ -117,30 +127,28 @@ data_eng["voltage_source"]["source"]["xs"] *= 0
 ## ##################### Conventional inverter #####################
 ### 4-leg inverters: set conventional, reconfigurable and ideal true or false
 setting = Dict("conventional"=>true, "reconfigurable" => false, "ideal" => false, "dc_link" => true)
-
-result_conv = run_sop_case(data_eng, setting)
+data_math_conv = build_sop_case(data_eng, setting)
+result_conv = run_sop_case(data_math_conv, setting)
 
 
 ## ##################### Reconfigurable inverter #####################
 ### 4-leg inverters: set conventional, reconfigurable and ideal true or false
 setting = Dict("conventional"=>false, "reconfigurable" => true, "ideal" => false, "dc_link" => true)
-
-result_mx = run_sop_case(data_eng, setting)
+data_math_mx = build_sop_case(data_eng, setting)
+result_mx = run_sop_case(data_math_mx, setting)
 
 
 ## ##################### Ideal inverter #####################
 ### 4-leg inverters: set conventional, reconfigurable and ideal true or false
 setting = Dict("conventional"=>false, "reconfigurable" => false, "ideal" => true, "dc_link" => true)
-
-result_ideal = run_sop_case(data_eng, setting)
-
+data_math_ideal = build_sop_case(data_eng, setting)
+result_ideal = run_sop_case(data_math_ideal, setting)
 
 
 ## inspect results
 result_conv["solution"]["branch"]["$sop_branch_id"]["pdc_link"]
 result_ideal["solution"]["branch"]["$sop_branch_id"]["pdc_link"]
 result_mx["solution"]["branch"]["$sop_branch_id"]["pdc_link"]
-
 
 round.(result_mx["solution"]["branch"]["$sop_branch_id"]["bg"])
 result_conv["solution"]["branch"]["$sop_branch_id"]["cr_fr"]

@@ -1,16 +1,14 @@
 function solve_opf_acp(data, optimizer; verbose=true)
     time_data_start = time()
 
-    ref = _IM.build_ref(data, _PMD.ref_add_core!, _PMD._pmd_global_keys, _PMD.pmd_it_name)[:it][:pmd][:nw][0]
+    ref = IM.build_ref(data, PMD.ref_add_core!, PMD._pmd_global_keys, PMD.pmd_it_name)[:it][:pmd][:nw][0]
     data_load_time = time() - time_data_start
     time_model_start = time()
 
     model = JuMP.Model(optimizer)
     JuMP.set_optimizer_attribute(model, "print_level", 0)
     n_ph = 3
-        # JuMP.@variable(model, ref[:bus][i]["vmin"][ph] <= vm[ph in 1:n_ph, i in keys(ref[:bus])] <= ref[:bus][i]["vmax"][ph], start=1.0)
-    # JuMP.@variable(model, -pi/2 <= va[ph in 1:n_ph, i in keys(ref[:bus])] <= pi/2 , start=0.0)
-
+    
     JuMP.@variable(model, vm[ph in 1:n_ph, i in keys(ref[:bus])], start=1.0)  
     JuMP.@variable(model, va[ph in 1:n_ph, i in keys(ref[:bus])]) 
 
@@ -89,7 +87,7 @@ function solve_opf_acp(data, optimizer; verbose=true)
         va_fr = va[:,branch["f_bus"]]
         va_to = va[:,branch["t_bus"]]
 
-        G, B = _PMD.calc_branch_y(branch)
+        G, B = PMD.calc_branch_y(branch)
         G_fr = branch["g_fr"]
         B_fr = branch["b_fr"]
         G_to = branch["g_to"]

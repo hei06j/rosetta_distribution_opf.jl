@@ -14,10 +14,10 @@ function plot_phasors(phasor, Imax; labeled=false, I2=[], I0=[])
         Plots.plot!(Imax*exp.(im*(0:0.01:2pi)), color=:black, border=:none, label=false, markersize=10, legend=false)
     end
     if !isempty(I2)
-        annotate!([-7], [-Imax], text(latexstring("I_2= $(I2)"), :black, 40))
+        Plots.annotate!([-7], [-Imax], Plots.text(latexstring("I_2= $(I2)"), :black, 40))
     end
     if !isempty(I0)
-        annotate!([-7], [-Imax+4], text(latexstring("I_0= $(I0)"), :black, 40))
+        Plots.annotate!([-7], [-Imax+4], Plots.text(latexstring("I_0= $(I0)"), :black, 40))
     end
     return plt
 end

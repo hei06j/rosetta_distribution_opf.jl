@@ -1,5 +1,7 @@
 using Plots
 using LaTeXStrings
+using rosetta_distribution_opf
+const RPMD = rosetta_distribution_opf
 
 w = 2*pi*50
 t = 0:0.001:0.103
@@ -75,6 +77,7 @@ T = 1/3 * [1 1 1 ; 1 alpha alpha^2 ; 1 alpha^2 alpha]
 Tre = real.(T)
 Tim = imag.(T)
 
+# t = 0 #:0.001:0.103
 Ima = 1;  Imb = 1; Imc = 1;
 Iaa = 0*pi/180;  Iab = 120*pi/180; Iac = -120*pi/180;
 Ia = Ima .* exp.(im*(w*t .+ Iaa))
