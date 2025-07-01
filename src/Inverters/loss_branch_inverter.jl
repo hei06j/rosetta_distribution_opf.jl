@@ -3,7 +3,7 @@ function add_inverter_losses!(data_math, gen_id; c_rating_a=0, reconfigurable=fa
     old_gen_bus = copy(gen["gen_bus"])
     new_gen_bus = length(data_math["bus"]) + 1
     
-    if three_wire 
+    if three_wire
         gen["connections"] = gen["connections"][1:3]
         data_math["bus"]["$old_gen_bus"]["terminals"] = data_math["bus"]["$old_gen_bus"]["terminals"][1:4]
         data_math["bus"]["$old_gen_bus"]["grounded"] = data_math["bus"]["$old_gen_bus"]["grounded"][1:4]

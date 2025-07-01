@@ -27,6 +27,7 @@ function build_data_math(data_path; setting=nothing, three_wire=false)
     for gen_id in pv_gen_ids
         RPMD.add_inverter_losses!(data_math, gen_id; three_wire=three_wire, reconfigurable=setting["reconfigurable"], dc_link=setting["dc_link"])
     end
+    return data_math
 end
 #############################################
 ## ######### 3-leg inverters ################

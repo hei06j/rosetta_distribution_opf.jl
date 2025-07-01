@@ -23,15 +23,15 @@ TODOs:
 - add DC voltage source or load
 """
 
-ENV["GUROBI_HOME"]="/Library/gurobi1103/macos_universal2"
-ENV["GRB_LICENSE_FILE"]="/Users/hei06j/gurobi/gurobi_11.lic"
+# ENV["GUROBI_HOME"]="/Library/gurobi1103/macos_universal2"
+# ENV["GRB_LICENSE_FILE"]="/Users/hei06j/gurobi/gurobi_11.lic"
 
 # ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "sb"=>"yes","warm_start_init_point"=>"yes", "hsllib"=>HSL_jll.libhsl_path, "linear_solver"=>"ma86")
 ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "sb"=>"yes","warm_start_init_point"=>"yes")
 highs_solver = optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false)
 gurobi_solver = optimizer_with_attributes(Gurobi.Optimizer, "output_flag" => false)
-# juniper_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>ipopt_solver, "mip_solver" => highs_solver)
-juniper_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>ipopt_solver, "mip_solver" => gurobi_solver)
+juniper_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>ipopt_solver, "mip_solver" => highs_solver)
+# juniper_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>ipopt_solver, "mip_solver" => gurobi_solver)
 
 # set_attribute(model, "hsllib", HSL_jll.libhsl_path)
 # set_attribute(model, "linear_solver", "ma86")
@@ -40,9 +40,9 @@ juniper_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>ipopt
 # dss_includes_gens = true
 # sop_branch_id = "6"
 
-# data_path = "./data/ENWL_4w_Network1_Feeders1and2/Master.dss"
+data_path = "./data/ENWL_4w_Network1_Feeders1and2/Master.dss"
 # data_path = "./data/European_LV_network/Master.dss"
-data_path = "./data/ENWL_4w_Network1_Feeder1/Master.dss"
+# data_path = "./data/ENWL_4w_Network1_Feeder1/Master.dss"
 dss_includes_gens = false
 sop_branch_id = "907"
 

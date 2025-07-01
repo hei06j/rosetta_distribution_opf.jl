@@ -158,42 +158,98 @@ function constraint_mc_sop_dc_link_ripple_power(pm::PMD.AbstractExplicitNeutralI
     vi_fr = [PMD.var(pm, nw, :vi, f_idx[2])[t] for t in f_connections]
     vr_to = [PMD.var(pm, nw, :vr, t_idx[2])[t] for t in t_connections]
     vi_to = [PMD.var(pm, nw, :vi, t_idx[2])[t] for t in t_connections]
+    
+    if pdcmax > 0
+        # if pdcmin > -Inf
+        #     JuMP.@constraint(pm.model, pdcmin^2 <= 
+        #                     sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
+        #                         for (idx, p) in enumerate(f_connections))
+        #                         +
+        #                     sum( (vr_to[p]*cr_to[idx] - vi_to[p]*ci_to[idx])^2 + (vr_to[p]*ci_to[idx] + vi_to[p]*cr_to[idx])^2 
+        #                         for (idx, p) in enumerate(t_connections))
+        #                     )
+        # end
+        if pdcmax < Inf
+            JuMP.@constraint(pm.model, pdcmax^2 >= 
+                            sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
+                                for (idx, p) in enumerate(f_connections))
+                                +
+                            sum( (vr_to[p]*cr_to[idx] - vi_to[p]*ci_to[idx])^2 + (vr_to[p]*ci_to[idx] + vi_to[p]*cr_to[idx])^2 
+                                for (idx, p) in enumerate(t_connections))
+                            )
+        end
+    else
+        JuMP.@constraint(pm.model, sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
+            for (idx, p) in enumerate(f_connections)) == 0)
+            
+        JuMP.@constraint(pm.model, sum( (vr_to[p]*cr_to[idx] - vi_to[p]*ci_to[idx])^2 + (vr_to[p]*ci_to[idx] + vi_to[p]*cr_to[idx])^2 
+            for (idx, p) in enumerate(t_connections)) == 0)
+    end
 
     pdc_link = JuMP.@expression(pm.model,  
-        sqrt(sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + 
-                  (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
-            for (idx, p) in enumerate(f_connections))
+        sqrt(sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
+                for (idx, p) in enumerate(f_connections))
                 +
-            sum( (vr_to[p]*cr_to[idx] - vi_to[p]*ci_to[idx])^2 + 
-                 (vr_to[p]*ci_to[idx] + vi_to[p]*cr_to[idx])^2 
-            for (idx, p) in enumerate(t_connections))
+            sum( (vr_to[p]*cr_to[idx] - vi_to[p]*ci_to[idx])^2 + (vr_to[p]*ci_to[idx] + vi_to[p]*cr_to[idx])^2 
+                for (idx, p) in enumerate(t_connections))
             )
         )
-    
-    if pdcmin > -Inf
-        JuMP.@constraint(pm.model, pdcmin^2 <= 
-                        sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
-                            for (idx, p) in enumerate(f_connections))
-                            +
-                        sum( (vr_to[p]*cr_to[idx] - vi_to[p]*ci_to[idx])^2 + (vr_to[p]*ci_to[idx] + vi_to[p]*cr_to[idx])^2 
-                            for (idx, p) in enumerate(t_connections))
-                        )
-    end
-    if pdcmax < Inf
-        JuMP.@constraint(pm.model, pdcmax^2 >= 
-                        sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
-                            for (idx, p) in enumerate(f_connections))
-                            +
-                        sum( (vr_to[p]*cr_to[idx] - vi_to[p]*ci_to[idx])^2 + (vr_to[p]*ci_to[idx] + vi_to[p]*cr_to[idx])^2 
-                            for (idx, p) in enumerate(t_connections))
-                        )
-    end
-    
+
     PMD.var(pm, nw, :pdc_link)[branch_id] = pdc_link
 
     if report
         PMD.sol(pm, nw, :branch, branch_id)[:pdc_link] = pdc_link
     end
+end
+
+
+function induction_motor_derating(pm)
+    a0 = 0.033125
+    a1 = 2.75
+    a2 = 56.25
+
+    # vmnegsqr = PMD.var(pm, 0, :vmnegsqr)[bus_id]
+    # vmneg    = PMD.var(pm, 0, :vmneg)[bus_id]
+    Db_curve(vmneg, vmnegsqr) = vmneg <= 0.01 ? 100 : 
+            ((vmneg >= 0.01 && vmneg <= 0.05) ? 100 - a2 * vmnegsqr + a1 * vmneg + a0 : 
+            0)
+    # JuMP.@operator(pm.model, Db, 2, Db_curve)
+    JuMP.add_nonlinear_operator(pm.model, 2, Db_curve; name = :Db)
+
+    JuMP.register(pm.model, :Db, 2, Db_curve, autodiff=true)
+
+    # _ = JuMP.add_nonlinear_operator(pm.model, 2, Db_curve; name = :Db)
+
+    # Db(x,y) = JuMP.NonlinearExpr(:Db, Any[x], Any[y])
+
+end
+
+
+function objective_utilize_ripple(pm)
+    a0 = 0.033125
+    a1 = 2.75
+    a2 = 56.25
+    Db_curve(vmneg, vmnegsqr) = vmneg <= 0.01 ? 100.0 : 
+            ((vmneg >= 0.01 && vmneg <= 0.05) ? 100.0 - (a2 * vmnegsqr + a1 * vmneg + a0) : 
+            0.0)
+    JuMP.@operator(pm.model, Db, 2, Db_curve)
+    # JuMP.add_nonlinear_operator(pm.model, 2, Db_curve; name = :Db)
+
+    IM_load_ids = [(load["load_bus"], sum(sqrt.(load["pd"].^2 .+ load["qd"].^2))) 
+        for (i, load) in PMD.ref(pm, 0, :load) if startswith(load["name"], "IM")]
+    # @show IM_load_ids
+
+    induction_obj = JuMP.@expression(pm.model,   
+        sum(sd * (100 - Db(PMD.var(pm, 0, :vmneg)[bus_id], PMD.var(pm, 0, :vmnegsqr)[bus_id])) 
+            for (bus_id, sd) in IM_load_ids)
+        )
+    
+    # ripple_obj =  JuMP.@expression(pm.model, sum(pdclink for (id, pdclink) in PMD.var(pm, 0)[:pdc_link]))
+    # ripple_obj =  JuMP.@expression(pm.model, PMD.var(pm, 0)[:pdc_link][1412])
+    alpha = 0.001
+
+    # JuMP.@objective(pm.model, Min, induction_obj + alpha * ripple_obj)
+    JuMP.@objective(pm.model, Min, induction_obj)
 end
 
 
@@ -219,10 +275,17 @@ function build_mc_opf_mx_sop(pm::PMD.AbstractExplicitNeutralIVRModel)
     if pm.setting["reconfigurable"]
         # variable_reconfigurable_inverter(pm)
         variable_reconfigurable_sop_inverter(pm)
+        # PMD.var(pm, 0)[:c_rating] = Dict{Int, Any}()
     end
 
     if pm.setting["dc_link"]
         PMD.var(pm, 0)[:pdc_link] = Dict{Int, Any}()
+    end
+
+    if pm.setting["induction_motor"]
+        PMD.var(pm, 0)[:vmneg] = Dict{Int, Any}()
+        PMD.var(pm, 0)[:vmnegsqr] = Dict{Int, Any}()
+        # induction_motor_derating(pm)
     end
 
     # Constraints
@@ -234,6 +297,10 @@ function build_mc_opf_mx_sop(pm::PMD.AbstractExplicitNeutralIVRModel)
 
         PMD.constraint_mc_voltage_absolute(pm, i)
         PMD.constraint_mc_voltage_pairwise(pm, i)
+
+        if pm.setting["induction_motor"]
+            constraint_mc_bus_voltage_balance(pm, i)
+        end
     end
 
     # components should be constrained before KCL, or the bus current variables might be undefined
@@ -246,6 +313,11 @@ function build_mc_opf_mx_sop(pm::PMD.AbstractExplicitNeutralIVRModel)
     for id in PMD.ids(pm, :load)
         PMD.constraint_mc_load_power(pm, id)
         PMD.constraint_mc_load_current(pm, id)
+        
+        # if pm.setting["induction_motor"] && startswith(PMD.ref(pm, :load, id)["name"], "IM")
+        #     load_bus = PMD.ref(pm, :load, id)["load_bus"]
+        #     induction_motor_derating(pm, load_bus)
+        # end
     end
 
     for i in PMD.ids(pm, :transformer)
@@ -291,8 +363,8 @@ function build_mc_opf_mx_sop(pm::PMD.AbstractExplicitNeutralIVRModel)
                 # PMD.constraint_mc_bus_voltage_drop(pm, i)
                 PMD.constraint_mc_branch_current_limit(pm, i)
                 constraint_sop_branch_balance(pm, i)
-                PMD.constraint_mc_thermal_limit_from(pm, i)
-                PMD.constraint_mc_thermal_limit_to(pm, i)
+                # PMD.constraint_mc_thermal_limit_from(pm, i)
+                # PMD.constraint_mc_thermal_limit_to(pm, i)
             end
 
             if pm.setting["dc_link"]
@@ -323,7 +395,11 @@ function build_mc_opf_mx_sop(pm::PMD.AbstractExplicitNeutralIVRModel)
     end
 
     # Objective
-    PMD.objective_mc_min_fuel_cost(pm)
+    # if pm.setting["induction_motor"]
+    #     objective_utilize_ripple(pm)
+    # else
+        PMD.objective_mc_min_fuel_cost(pm)
+    # end
     # objective_mc_min_IUF(pm)
     # objective_mc_min_losses_active(pm)
 end

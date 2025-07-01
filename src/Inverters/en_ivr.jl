@@ -641,7 +641,7 @@ function constraint_mc_inverter_dc_link_ripple_power(pm::PMD.AbstractNLExplicitN
         #                     )
     end
     
-
+    
     # if pdcmax < Inf
         pdc_link = JuMP.@expression(pm.model,  
         sqrt(
@@ -650,7 +650,7 @@ function constraint_mc_inverter_dc_link_ripple_power(pm::PMD.AbstractNLExplicitN
             sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
             )
         )
-
+        
         PMD.var(pm, nw, :pdc_link)[id] = pdc_link
         
         if report
@@ -753,3 +753,201 @@ function constraint_mc_inverter_branch_dc_link_ripple_power(pm::PMD.AbstractNLEx
         PMD.sol(pm, nw, :branch, id)[:pdc_link] = pdc_link
     end
 end
+
+
+###### voltage sequence components
+"""
+a = exp(im*2π/3)
+U+ = (1*Ua + a*Ub a^2*Uc)/3
+U- = (1*Ua + a^2*Ub a*Uc)/3
+vuf = |U-|/|U+|
+|U-| <= vufmax*|U+|
+|U-|^2 <= vufmax^2*|U+|^2
+"""
+function constraint_mc_bus_voltage_magnitude_negative_sequence(pm::PMD.AbstractUnbalancedIVRModel, nw::Int, bus_id::Int, vmnegmax::Real)
+    # if !haskey(PMD.var(pm, nw_id_default), :vmpossqr)
+    #     PMD.var(pm, nw_id_default)[:vmpossqr] = Dict{Int, Any}()
+    #     PMD.var(pm, nw_id_default)[:vmnegsqr] = Dict{Int, Any}()
+    # end
+    (vr_a, vr_b, vr_c) = [PMD.var(pm, nw, :vr, bus_id)[i] for i in 1:3]
+    (vi_a, vi_b, vi_c) = [PMD.var(pm, nw, :vi, bus_id)[i] for i in 1:3]
+    a = exp(im*2*pi/3)
+    # real and imag functions cannot be used in NLexpressions, so precalculate
+    are = real(a)
+    aim = imag(a)
+    a2re = real(a^2)
+    a2im = imag(a^2)
+
+    # real and imaginary components of U-
+    vreneg = JuMP.@expression(pm.model,
+        (vr_a + a2re*vr_b - a2im*vi_b + are*vr_c - aim*vi_c)/3
+    )
+    vimneg = JuMP.@expression(pm.model,
+        (vi_a + a2re*vi_b + a2im*vr_b + are*vi_c + aim*vr_c)/3
+    )
+    # square of magnitude of U-, |U-|^2
+    vmnegsqr = JuMP.@expression(pm.model, vreneg^2+vimneg^2)
+
+
+    PMD.var(pm, nw, :vmnegsqr)[bus_id] = vmnegsqr
+    PMD.sol(pm, nw, :bus, bus_id)[:vmnegsqr] = vmnegsqr
+
+    vmneg = PMD.var(pm, nw, :vmneg)[bus_id] = JuMP.@variable(pm.model, base_name="$(nw)_vmneg_$bus_id", start = 0)
+    PMD.sol(pm, nw, :bus, bus_id)[:vmneg] = vmneg
+        
+    JuMP.@constraint(pm.model, vmneg * vmneg == vmnegsqr)
+    JuMP.@constraint(pm.model, vmneg >= 0)
+
+    # # finally, apply constraint
+    # JuMP.@constraint(pm.model, vmnegsqr <= vmnegmax^2)
+end
+
+
+"""
+a = exp(im*2π/3)
+U+ = (1*Ua + a*Ub a^2*Uc)/3
+U- = (1*Ua + a^2*Ub a*Uc)/3
+vuf = |U-|/|U+|
+|U-| <= vufmax*|U+|
+|U-|^2 <= vufmax^2*|U+|^2
+"""
+function constraint_mc_bus_voltage_magnitude_positive_sequence(pm::PMD.AbstractUnbalancedIVRModel, nw::Int, bus_id::Int, vmposmax::Real)
+    if !haskey(PMD.var(pm, nw_id_default), :vmpossqr)
+        PMD.var(pm, nw_id_default)[:vmpossqr] = Dict{Int, Any}()
+        PMD.var(pm, nw_id_default)[:vmnegsqr] = Dict{Int, Any}()
+    end
+    (vr_a, vr_b, vr_c) = [PMD.var(pm, nw, :vr, bus_id)[i] for i in 1:3]
+    (vi_a, vi_b, vi_c) = [PMD.var(pm, nw, :vi, bus_id)[i] for i in 1:3]
+    a = exp(im*2*pi/3)
+    # real and imag functions cannot be used in NLexpressions, so precalculate
+    are = real(a)
+    aim = imag(a)
+    a2re = real(a^2)
+    a2im = imag(a^2)
+    # real and imaginary components of U+
+    vrepos = JuMP.@expression(pm.model,
+        (vr_a + are*vr_b - aim*vi_b + a2re*vr_c - a2im*vi_c)/3
+    )
+    vimpos = JuMP.@expression(pm.model,
+        (vi_a + are*vi_b + aim*vr_b + a2re*vi_c + a2im*vr_c)/3
+    )
+    # square of magnitude of U+, |U+|^2
+    vmpossqr = JuMP.@expression(pm.model, vrepos^2+vimpos^2)
+    # finally, apply constraint
+    JuMP.@constraint(pm.model, vmpossqr <= vmposmax^2)
+end
+
+
+"""
+a = exp(im*2π/3)
+U+ = (1*Ua + a*Ub a^2*Uc)/3
+U- = (1*Ua + a^2*Ub a*Uc)/3
+vuf = |U-|/|U+|
+|U-| <= vufmax*|U+|
+|U-|^2 <= vufmax^2*|U+|^2
+"""
+function constraint_mc_bus_voltage_magnitude_zero_sequence(pm::PMD.AbstractUnbalancedIVRModel, nw::Int, bus_id::Int, vmzeromax::Real)
+    if !haskey(PMD.var(pm, nw_id_default), :vmpossqr)
+        PMD.var(pm, nw_id_default)[:vmpossqr] = Dict{Int, Any}()
+        PMD.var(pm, nw_id_default)[:vmnegsqr] = Dict{Int, Any}()
+    end
+    (vr_a, vr_b, vr_c) = [PMD.var(pm, nw, :vr, bus_id)[i] for i in 1:3]
+    (vi_a, vi_b, vi_c) = [PMD.var(pm, nw, :vi, bus_id)[i] for i in 1:3]
+    # real and imaginary components of U+
+    vrezero = JuMP.@expression(pm.model,
+        (vr_a + vr_b + vr_c)/3
+    )
+    vimzero = JuMP.@expression(pm.model,
+        (vi_a + vi_b + vi_c)/3
+    )
+    # square of magnitude of U+, |U+|^2
+    vmzerosqr = JuMP.@expression(pm.model, vrezero^2+vimzero^2)
+    # finally, apply constraint
+    JuMP.@constraint(pm.model, vmzerosqr <= vmzeromax^2)
+end
+
+
+
+"""
+a = exp(im*2π/3)
+U+ = (1*Ua + a*Ub a^2*Uc)/3
+U- = (1*Ua + a^2*Ub a*Uc)/3
+vuf = |U-|/|U+|
+|U-| <= vufmax*|U+|
+|U-|^2 <= vufmax^2*|U+|^2
+"""
+function constraint_mc_bus_voltage_magnitude_vuf(pm::PMD.AbstractUnbalancedIVRModel, nw::Int, bus_id::Int, vufmax::Real)
+    if !haskey(PMD.var(pm, nw_id_default), :vmpossqr)
+        PMD.var(pm, nw_id_default)[:vmpossqr] = Dict{Int, Any}()
+        PMD.var(pm, nw_id_default)[:vmnegsqr] = Dict{Int, Any}()
+    end
+    (vr_a, vr_b, vr_c) = [PMD.var(pm, nw, :vr, bus_id)[i] for i in 1:3]
+    (vi_a, vi_b, vi_c) = [PMD.var(pm, nw, :vi, bus_id)[i] for i in 1:3]
+    a = exp(im*2*pi/3)
+    # real and imag functions cannot be used in NLexpressions, so precalculate
+    are = real(a)
+    aim = imag(a)
+    a2re = real(a^2)
+    a2im = imag(a^2)
+    # real and imaginary components of U+
+    vrepos = JuMP.@expression(pm.model,
+        (vr_a + are*vr_b - aim*vi_b + a2re*vr_c - a2im*vi_c)/3
+    )
+    vimpos = JuMP.@expression(pm.model,
+        (vi_a + are*vi_b + aim*vr_b + a2re*vi_c + a2im*vr_c)/3
+    )
+    # square of magnitude of U+, |U+|^2
+    vmpossqr = JuMP.@expression(pm.model, vrepos^2+vimpos^2)
+    # real and imaginary components of U-
+    vreneg = JuMP.@expression(pm.model,
+        (vr_a + a2re*vr_b - a2im*vi_b + are*vr_c - aim*vi_c)/3
+    )
+    vimneg = JuMP.@expression(pm.model,
+        (vi_a + a2re*vi_b + a2im*vr_b + are*vi_c + aim*vr_c)/3
+    )
+    # square of magnitude of U-, |U-|^2
+    vmnegsqr = JuMP.@expression(pm.model, vreneg^2+vimneg^2)
+    # finally, apply constraint
+    JuMP.@constraint(pm.model, vmnegsqr <= vufmax^2*vmpossqr)
+    # DEBUGGING: save references for post check
+    #PMD.var(pm, nw_id_default, :vmpossqr)[bus_id] = vmpossqr
+    #PMD.var(pm, nw_id_default, :vmnegsqr)[bus_id] = vmnegsqr
+end
+
+
+
+"""
+    constraint_mc_bus_voltage_balance(pm::AbstractUnbalancedACRModel, bus_id::Int; nw=nw_id_default)::Nothing
+
+Template function for bus voltage balance constraints.
+"""
+function constraint_mc_bus_voltage_balance(pm::PMD.AbstractUnbalancedACRModel, bus_id::Int; nw=PMD.nw_id_default)::Nothing
+    # @assert(length(PMD.ref(pm, nw, :conductor_ids))==3)
+
+    bus = PMD.ref(pm, nw, :bus, bus_id)
+    constraint_mc_bus_voltage_magnitude_negative_sequence(pm, nw, bus_id, 0)
+
+    # if haskey(bus, "vm_vuf_max")
+    #     constraint_mc_bus_voltage_magnitude_vuf(pm, nw, bus_id, bus["vm_vuf_max"])
+    # end
+
+    # if haskey(bus, "vm_seq_neg_max")
+    #     constraint_mc_bus_voltage_magnitude_negative_sequence(pm, nw, bus_id, bus["vm_seq_neg_max"])
+    # end
+
+    # if haskey(bus, "vm_seq_pos_max")
+    #     constraint_mc_bus_voltage_magnitude_positive_sequence(pm, nw, bus_id, bus["vm_seq_pos_max"])
+    # end
+
+    # if haskey(bus, "vm_seq_zero_max")
+    #     constraint_mc_bus_voltage_magnitude_zero_sequence(pm, nw, bus_id, bus["vm_seq_zero_max"])
+    # end
+
+    # if haskey(bus, "vm_ll_min")|| haskey(bus, "vm_ll_max")
+    #     vm_ll_min = haskey(bus, "vm_ll_min") ? bus["vm_ll_min"] : fill(0, 3)
+    #     vm_ll_max = haskey(bus, "vm_ll_max") ? bus["vm_ll_max"] : fill(Inf, 3)
+    #     PMD.constraint_mc_bus_voltage_magnitude_ll(pm, nw, bus_id, vm_ll_min, vm_ll_max)
+    # end
+    nothing
+end
+

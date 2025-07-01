@@ -184,7 +184,7 @@ end
 laod_data_path = "./data/Load profiles/network_example.csv"
 load_data = CSV.read(laod_data_path, DataFrame, header=false)
 
-timesteps = 1:48
+timesteps = 1:2
 
 ## ##################### Conventional inverter #####################
 setting = Dict("conventional"=>true, "reconfigurable" => false, "ideal" => false, "dc_link" => true)
@@ -192,6 +192,8 @@ setting = Dict("conventional"=>true, "reconfigurable" => false, "ideal" => false
 i = 1
 data_math_NO_conv = build_data_math(data_path, load_data, i; sbase=0.8)
 data_math_conv = build_data_math(data_path, load_data, i; setting=setting, sbase=1)
+@show data_math_conv["load"]
+
 data_math_conv_sc0_mn = Dict("nw"=>Dict(string(i)=>deepcopy(data_math_NO_conv) for i in 1:length(timesteps)))
 data_math_conv_sc1_mn = Dict("nw"=>Dict(string(i)=>deepcopy(data_math_conv) for i in 1:length(timesteps)))
 data_math_conv_sc2_mn = Dict("nw"=>Dict(string(i)=>deepcopy(data_math_conv) for i in 1:length(timesteps)))

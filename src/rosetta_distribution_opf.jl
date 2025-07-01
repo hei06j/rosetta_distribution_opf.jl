@@ -9,7 +9,7 @@ module rosetta_distribution_opf
 
     const IM = InfrastructureModels
     const PMD = PowerModelsDistribution
-\
+
     using GraphPlot
     using Graphs
     const _GP = GraphPlot
