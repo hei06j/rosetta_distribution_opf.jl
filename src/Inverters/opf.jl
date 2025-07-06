@@ -168,7 +168,7 @@ function build_mc_opf_mx(pm::PMD.AbstractExplicitNeutralIVRModel)
     end
 
     if pm.setting["dc_link"]
-        PMD.var(pm, 0)[:pdc_link] = Dict{Int, Any}()
+        PMD.var(pm, 0)[:pdc_link_sqr] = Dict{Int, Any}()
     end
 
     # Constraints
@@ -315,7 +315,7 @@ function build_mc_opf_mx_cost(pm::PMD.AbstractExplicitNeutralIVRModel)
     end
 
     if pm.setting["dc_link"]
-        PMD.var(pm, 0)[:pdc_link] = Dict{Int, Any}()
+        PMD.var(pm, 0)[:pdc_link_sqr] = Dict{Int, Any}()
     end
 
     # Constraints

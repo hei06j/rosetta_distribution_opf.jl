@@ -160,15 +160,6 @@ function constraint_mc_sop_dc_link_ripple_power(pm::PMD.AbstractExplicitNeutralI
     vi_to = [PMD.var(pm, nw, :vi, t_idx[2])[t] for t in t_connections]
     
     if pdcmax > 0
-        # if pdcmin > -Inf
-        #     JuMP.@constraint(pm.model, pdcmin^2 <= 
-        #                     sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
-        #                         for (idx, p) in enumerate(f_connections))
-        #                         +
-        #                     sum( (vr_to[p]*cr_to[idx] - vi_to[p]*ci_to[idx])^2 + (vr_to[p]*ci_to[idx] + vi_to[p]*cr_to[idx])^2 
-        #                         for (idx, p) in enumerate(t_connections))
-        #                     )
-        # end
         if pdcmax < Inf
             JuMP.@constraint(pm.model, pdcmax^2 >= 
                             sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
@@ -186,19 +177,18 @@ function constraint_mc_sop_dc_link_ripple_power(pm::PMD.AbstractExplicitNeutralI
             for (idx, p) in enumerate(t_connections)) == 0)
     end
 
-    pdc_link = JuMP.@expression(pm.model,  
-        sqrt(sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
+    pdc_link_sqr = JuMP.@expression(pm.model,  
+        sum( (vr_fr[p]*cr_fr[idx] - vi_fr[p]*ci_fr[idx])^2 + (vr_fr[p]*ci_fr[idx] + vi_fr[p]*cr_fr[idx])^2 
                 for (idx, p) in enumerate(f_connections))
-                +
-            sum( (vr_to[p]*cr_to[idx] - vi_to[p]*ci_to[idx])^2 + (vr_to[p]*ci_to[idx] + vi_to[p]*cr_to[idx])^2 
-                for (idx, p) in enumerate(t_connections))
-            )
+            +
+        sum( (vr_to[p]*cr_to[idx] - vi_to[p]*ci_to[idx])^2 + (vr_to[p]*ci_to[idx] + vi_to[p]*cr_to[idx])^2 
+            for (idx, p) in enumerate(t_connections))
         )
 
-    PMD.var(pm, nw, :pdc_link)[branch_id] = pdc_link
+    PMD.var(pm, nw, :pdc_link_sqr)[branch_id] = pdc_link_sqr
 
     if report
-        PMD.sol(pm, nw, :branch, branch_id)[:pdc_link] = pdc_link
+        PMD.sol(pm, nw, :branch, branch_id)[:pdc_link_sqr] = pdc_link_sqr
     end
 end
 
@@ -244,12 +234,12 @@ function objective_utilize_ripple(pm)
             for (bus_id, sd) in IM_load_ids)
         )
     
-    # ripple_obj =  JuMP.@expression(pm.model, sum(pdclink for (id, pdclink) in PMD.var(pm, 0)[:pdc_link]))
-    # ripple_obj =  JuMP.@expression(pm.model, PMD.var(pm, 0)[:pdc_link][1412])
+    # ripple_obj =  JuMP.@expression(pm.model, sum(pdclinksqr for (id, pdclinksqr) in PMD.var(pm, 0)[:pdc_link_sqr]))
+    ripple_obj =  JuMP.@expression(pm.model, PMD.var(pm, 0)[:pdc_link_sqr][1412])
     alpha = 0.001
 
-    # JuMP.@objective(pm.model, Min, induction_obj + alpha * ripple_obj)
-    JuMP.@objective(pm.model, Min, induction_obj)
+    JuMP.@objective(pm.model, Min, induction_obj + alpha * ripple_obj)
+    # JuMP.@objective(pm.model, Min, induction_obj)
 end
 
 
@@ -279,7 +269,7 @@ function build_mc_opf_mx_sop(pm::PMD.AbstractExplicitNeutralIVRModel)
     end
 
     if pm.setting["dc_link"]
-        PMD.var(pm, 0)[:pdc_link] = Dict{Int, Any}()
+        PMD.var(pm, 0)[:pdc_link_sqr] = Dict{Int, Any}()
     end
 
     if pm.setting["induction_motor"]
@@ -395,11 +385,11 @@ function build_mc_opf_mx_sop(pm::PMD.AbstractExplicitNeutralIVRModel)
     end
 
     # Objective
-    # if pm.setting["induction_motor"]
-    #     objective_utilize_ripple(pm)
-    # else
+    if pm.setting["induction_motor"]
+        objective_utilize_ripple(pm)
+    else
         PMD.objective_mc_min_fuel_cost(pm)
-    # end
+    end
     # objective_mc_min_IUF(pm)
     # objective_mc_min_losses_active(pm)
 end

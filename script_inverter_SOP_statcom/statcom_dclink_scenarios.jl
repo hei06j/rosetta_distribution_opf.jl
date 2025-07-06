@@ -236,7 +236,7 @@ for i in collect(timesteps)
     result_conv_sc1_mn["solution"]["nw"]["$i"]["objective"] = result_conv_sc1["objective"]
     result_conv_sc1_mn["solution"]["nw"]["$i"]["termination_status"] = result_conv_sc1["termination_status"]
     @show "SC1", result_conv_sc1["termination_status"]
-
+    
     ## Scenario 2 - 2w ripple is unconstrained, but the neutral current is set to be fully constrained (ie no neutral current).
     sbase = 1
     data_math_conv, Ibase = build_data_math(data_path, load_data, i; setting=setting, sbase=sbase)

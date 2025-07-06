@@ -581,7 +581,7 @@ end
 	)
 
 For IVR models with explicit neutrals,
-creates non-linear expressions for the inverter dc link power `:pdc_link`
+creates non-linear expressions for the inverter dc link power `:pdc_link_sqr`
 of wye-connected generators as a function of voltage and current
 """
 function constraint_mc_inverter_dc_link_ripple_power(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, pdcmin::Real, pdcmax::Real; report::Bool=true)
@@ -597,66 +597,29 @@ function constraint_mc_inverter_dc_link_ripple_power(pm::PMD.AbstractNLExplicitN
     n      = connections[end]
 
     
-    # pdc_link = JuMP.@expression(pm.model,  
-    #     sqrt(sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
-    #             ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
-    #         for (idx, p) in enumerate(phases))
-    #         )
-    #     )
-    
     if pdcmax > 0
-        # if pdcmin > -Inf
-        #     JuMP.@constraint(pm.model, pdcmin^2 <= sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) )^2
-        #                                             + 
-        #                                             sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
-        #                     )
-        #     # JuMP.@constraint(pm.model, pdcmin^2 <= sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
-        #     #                                                 ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
-        #     #                                             for (idx, p) in enumerate(phases))
-        #     #                 )
-        # end
         if pdcmax < Inf
             JuMP.@constraint(pm.model, pdcmax^2 >= sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) )^2
                                                     + 
-                                                    sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
+                                                   sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
                             )
-            # JuMP.@constraint(pm.model, pdcmax^2 >= sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
-            #                                                 ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
-            #                                             for (idx, p) in enumerate(phases))
-            #                 )
-            
         end
     elseif pdcmax == 0
         JuMP.@constraint(pm.model, sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) ) == 0)
         JuMP.@constraint(pm.model, sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) ) == 0)
-        # JuMP.@constraint(pm.model, sum( (vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx] for (idx, p) in enumerate(phases) ) == 0)
-        # JuMP.@constraint(pm.model, sum( (vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx] for (idx, p) in enumerate(phases) ) == 0)
-        # JuMP.@constraint(pm.model, pdcmin^2 == sum( ((vr[p]-vr[n])*crg[idx]-(vi[p]-vi[n])*cig[idx])^2 + 
-        #                                                     ((vr[p]-vr[n])*cig[idx]+(vi[p]-vi[n])*crg[idx])^2 
-        #                                                 for (idx, p) in enumerate(phases))
-        #                     )
-        # JuMP.@constraint(pm.model, pdcmin^2 == sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) )^2
-        #                                             + 
-        #                                             sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
-        #                     )
     end
     
+    pdc_link_sqr = JuMP.@expression(pm.model,  
+        sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) )^2
+        + 
+        sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
+    )
     
-    # if pdcmax < Inf
-        pdc_link = JuMP.@expression(pm.model,  
-        sqrt(
-            sum( vr[p]*crg_bus[idx] - vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) )^2
-            + 
-            sum( vr[p]*cig_bus[idx] + vi[p]*crg_bus[idx] for (idx, p) in enumerate(connections) )^2
-            )
-        )
-        
-        PMD.var(pm, nw, :pdc_link)[id] = pdc_link
-        
-        if report
-            PMD.sol(pm, nw, :gen, id)[:pdc_link] = pdc_link
-        end
-    # end
+    PMD.var(pm, nw, :pdc_link_sqr)[id] = pdc_link_sqr
+    
+    if report
+        PMD.sol(pm, nw, :gen, id)[:pdc_link_sqr] = pdc_link_sqr
+    end
 
 end
 
@@ -676,7 +639,7 @@ end
 	)
 
 For IVR models with explicit neutrals,
-creates non-linear expressions for the inverter dc link power `:pdc_link`
+creates non-linear expressions for the inverter dc link power `:pdc_link_sqr`
 of wye-connected generators as a function of voltage and current
 """
 function constraint_mc_inverter_branch_dc_link_ripple_power(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, f_idx::Tuple{Int,Int,Int}, f_connections::Vector{Int}, pdcmin::Real, pdcmax::Real; report::Bool=true)
@@ -690,67 +653,30 @@ function constraint_mc_inverter_branch_dc_link_ripple_power(pm::PMD.AbstractNLEx
     n      = f_connections[end]
     
 
-    pdc_link = JuMP.@expression(pm.model,  
-    sqrt(
+    pdc_link_sqr = JuMP.@expression(pm.model,  
         sum( vr[p]*cr[idx] - vi[p]*ci[idx] for (idx, p) in enumerate(f_connections) )^2
         + 
         sum( vr[p]*ci[idx] + vi[p]*cr[idx] for (idx, p) in enumerate(f_connections) )^2
-        )
     )
 
-    # pdc_link = JuMP.@expression(pm.model,  
-    #     sqrt(sum( ((vr[p])*cr[idx]-(vi[p])*ci[idx])^2 + 
-    #             ((vr[p])*ci[idx]+(vi[p])*cr[idx])^2 
-    #         for (idx, p) in enumerate(f_connections))
-    #         )
-    #     )
-
-    # pdc_link = JuMP.@expression(pm.model,  
-    #     sqrt(sum( ((vr[p]-vr[n])*cr[idx]-(vi[p]-vi[n])*ci[idx])^2 + 
-    #             ((vr[p]-vr[n])*ci[idx]+(vi[p]-vi[n])*cr[idx])^2 
-    #         for (idx, p) in enumerate(phases))
-    #         )
-    #     )
-    
     # if pdcmin !== pdcmax
         if pdcmin > -Inf
             JuMP.@constraint(pm.model, pdcmin^2 <= sum( vr[p]*cr[idx] - vi[p]*ci[idx] for (idx, p) in enumerate(f_connections) )^2
                                                     + 
                                                     sum( vr[p]*ci[idx] + vi[p]*cr[idx] for (idx, p) in enumerate(f_connections) )^2
                             )
-            # JuMP.@constraint(pm.model, pdcmin^2 <= sum( ((vr[p]-vr[n])*cr[idx]-(vi[p]-vi[n])*ci[idx])^2 + 
-            #                                                 ((vr[p]-vr[n])*ci[idx]+(vi[p]-vi[n])*cr[idx])^2 
-            #                                             for (idx, p) in enumerate(phases))
-            #                 )
-            # JuMP.@constraint(pm.model, pdcmin^2 <= sum( ((vr[p])*cr[idx]-(vi[p])*ci[idx])^2 + 
-            #                                                 ((vr[p])*ci[idx]+(vi[p])*cr[idx])^2 
-            #                                             for (idx, p) in enumerate(f_connections))
-            #                 )
         end
         if pdcmax < Inf
             JuMP.@constraint(pm.model, pdcmax^2 >= sum( vr[p]*cr[idx] - vi[p]*ci[idx] for (idx, p) in enumerate(f_connections) )^2
                                                     + 
                                                     sum( vr[p]*ci[idx] + vi[p]*cr[idx] for (idx, p) in enumerate(f_connections) )^2
                             )
-            # JuMP.@constraint(pm.model, pdcmax^2 >= sum( ((vr[p]-vr[n])*cr[idx]-(vi[p]-vi[n])*ci[idx])^2 + 
-            #                                                 ((vr[p]-vr[n])*ci[idx]+(vi[p]-vi[n])*cr[idx])^2 
-            #                                             for (idx, p) in enumerate(phases))
-            #                 )
-            # JuMP.@constraint(pm.model, pdcmax^2 >= sum( ((vr[p])*cr[idx]-(vi[p])*ci[idx])^2 + 
-            #                                                 ((vr[p])*ci[idx]+(vi[p])*cr[idx])^2 
-            #                                             for (idx, p) in enumerate(f_connections))
-            #                 )
         end
-    # else
-    #     JuMP.@constraint(pm.model, pdcmin^2 == sum( ((vr[p]-vr[n])*cr[idx]-(vi[p]-vi[n])*ci[idx])^2 + 
-    #                                                         ((vr[p]-vr[n])*ci[idx]+(vi[p]-vi[n])*cr[idx])^2 
-    #                                                     for (idx, p) in enumerate(phases))
-    #                         )
-    # end
-    PMD.var(pm, nw, :pdc_link)[id] = pdc_link
+
+    PMD.var(pm, nw, :pdc_link_sqr)[id] = pdc_link_sqr
 
     if report
-        PMD.sol(pm, nw, :branch, id)[:pdc_link] = pdc_link
+        PMD.sol(pm, nw, :branch, id)[:pdc_link_sqr] = pdc_link_sqr
     end
 end
 
