@@ -16,11 +16,13 @@ Set DefaultBaseFreq=50
 New Circuit.ENWL_network_1_Feeder2_1and2_4wire BasekV=0.4 pu=1.00 ISC3=100000 ISC1=100000
 New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
 
+! New Line.sourceZ bus1=sourcebus.1.2.3.4 bus2=Tx1.1.2.3.4 phases=4 R1=0.000734330 X1=0.0721592323 R0=1e-10 X0=0.069222 C1=0 C0=0
+
 Redirect LineCode.txt
 Redirect Lines.txt
-Redirect Loads.txt
+! Redirect Loads.txt
+Redirect Loads_v2.txt
 
-// New PVSystem.PV1 phases=3 conn=wye bus1=F1_342.1.2.3.4 kv=0.4 kva=10 pf=1.0
 
 New Energymeter.substation Element=Line.F1_LINE1 1
 

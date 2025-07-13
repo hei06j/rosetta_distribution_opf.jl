@@ -1,12 +1,4 @@
 function add_sop_inverter_losses!(data_math, gen_id1, gen_id2; c_rating_a=0, reconfigurable=false, dc_link=true)
-
-    # ## add a branch for each inverter
-    # new_gen1_bus, new_branch_id1 = RPMD.add_inverter_losses!(data_math, gen_id1; reconfigurable=reconfigurable)
-    # new_gen2_bus, new_branch_id2 = RPMD.add_inverter_losses!(data_math, gen_id2; reconfigurable=reconfigurable)
-
-    # @show new_gen1_bus, new_branch_id1
-    # @show new_gen2_bus, new_branch_id2
-
     ## add a branch for each inverter
     f_bus = data_math["gen"]["$gen_id1"]["gen_bus"]
     t_bus = data_math["gen"]["$gen_id2"]["gen_bus"]    
@@ -15,7 +7,6 @@ function add_sop_inverter_losses!(data_math, gen_id1, gen_id2; c_rating_a=0, rec
     sbace_factor = data_math["settings"]["power_scale_factor"]      # 
     vbase = [v for v in values(data_math["settings"]["vbases_default"])][1]
     vbase_factor = data_math["settings"]["voltage_scale_factor"]
-    # vbase = 0.2309      # [kV]  data_math["settings"]["vbases_default"]["5"]
     Ibase = (sbase * sbace_factor) / (vbase * vbase_factor)  #[kA]
     zbase = (vbase * vbase_factor)^2 / (sbase * sbace_factor)
     vbase_max = vbase*1.1  # [V]
@@ -27,7 +18,6 @@ function add_sop_inverter_losses!(data_math, gen_id1, gen_id2; c_rating_a=0, rec
     Vdc = 0.6   # [kV]
     Rin_Vdc = Rin / Vdc^2
     Cin_Vdc = Cin / Vdc^2
-    # zbase = 230.94^2 / 1000
     new_branch_id = length(data_math["branch"]) + 1
     branch_data = deepcopy(data_math["branch"]["$(new_branch_id-1)"])
     data_math["branch"]["$new_branch_id"] = deepcopy(branch_data)
@@ -85,7 +75,7 @@ function add_sop_inverter_losses!(data_math, gen_id1, gen_id2; c_rating_a=0, rec
     if isempty([i for (i, gen) in data_math["gen"] if gen["gen_bus"] == t_bus])
         data_math["bus"]["$t_bus"]["bus_type"] = 1
     end
-
+    
     ## set the generations output to zero, so that no exgenous input exists
     # for id in [gen_id1, gen_id2]
     #     # data_math["gen"]["$id"]["pmin"] *= 0

@@ -1,0 +1,34 @@
+! Imported from Loads.txt, with modified neutral terminal
+! ---------------------------------------------------------------------------
+New Load.LOAD_2_1 Phases=1 Bus1=2_115.1.4 kV=0.23 kW=1.968  PF=0.95
+New Load.LOAD_2_2 Phases=1 Bus1=2_181.1.4 kV=0.23 kW=0.306  PF=0.95
+New Load.LOAD_2_3 Phases=1 Bus1=2_196.3.4 kV=0.23 kW=2.94  PF=0.95
+New Load.LOAD_2_4 Phases=1 Bus1=2_219.1.4 kV=0.23 kW=0.324  PF=0.95
+New Load.LOAD_2_5 Phases=1 Bus1=2_222.2.4 kV=0.23 kW=1.332  PF=0.95
+New Load.LOAD_2_6 Phases=1 Bus1=2_223.2.4 kV=0.23 kW=3.0540000000000003  PF=0.95
+New Load.LOAD_2_7 Phases=1 Bus1=2_232.3.4 kV=0.23 kW=2.0580000000000003  PF=0.95
+New Load.LOAD_2_8 Phases=1 Bus1=2_240.1.4 kV=0.23 kW=0.29400000000000004  PF=0.95
+New Load.LOAD_2_9 Phases=1 Bus1=2_271.2.4 kV=0.23 kW=0.312  PF=0.95
+New Load.LOAD_2_10 Phases=1 Bus1=2_278.1.4 kV=0.23 kW=0.27  PF=0.95
+New Load.LOAD_2_11 Phases=1 Bus1=2_279.1.4 kV=0.23 kW=0.33  PF=0.95
+New Load.LOAD_2_12 Phases=1 Bus1=2_284.1.4 kV=0.23 kW=0.33  PF=0.95
+New Load.LOAD_2_13 Phases=1 Bus1=2_317.2.4 kV=0.23 kW=0.246  PF=0.95
+New Load.LOAD_2_14 Phases=1 Bus1=2_326.1.4 kV=0.23 kW=2.04  PF=0.95
+New Load.LOAD_2_15 Phases=1 Bus1=2_327.1.4 kV=0.23 kW=0.8280000000000001  PF=0.95
+New Load.LOAD_2_16 Phases=1 Bus1=2_332.3.4 kV=0.23 kW=0.11399999999999999  PF=0.95
+New Load.LOAD_2_17 Phases=1 Bus1=2_345.3.4 kV=0.23 kW=0.28800000000000003  PF=0.95
+New Load.LOAD_2_18 Phases=1 Bus1=2_356.2.4 kV=0.23 kW=0.324  PF=0.95
+New Load.LOAD_2_19 Phases=1 Bus1=2_361.3.4 kV=0.23 kW=1.944  PF=0.95
+New Load.LOAD_2_20 Phases=1 Bus1=2_362.3.4 kV=0.23 kW=0.264  PF=0.95
+New Load.LOAD_2_21 Phases=1 Bus1=2_364.1.4 kV=0.23 kW=0.336  PF=0.95
+New Load.LOAD_2_22 Phases=1 Bus1=2_399.2.4 kV=0.23 kW=0.966  PF=0.95
+New Load.LOAD_2_23 Phases=1 Bus1=2_415.3.4 kV=0.23 kW=0.246  PF=0.95
+New Load.LOAD_2_24 Phases=1 Bus1=2_440.2.4 kV=0.23 kW=1.956  PF=0.95
+New Load.LOAD_2_25 Phases=1 Bus1=2_443.3.4 kV=0.23 kW=0.29400000000000004  PF=0.95
+New Load.LOAD_2_26 Phases=1 Bus1=2_455.2.4 kV=0.23 kW=0.336  PF=0.95
+New Load.LOAD_2_27 Phases=1 Bus1=2_456.2.4 kV=0.23 kW=0.27  PF=0.95
+New Load.LOAD_2_28 Phases=1 Bus1=2_461.2.4 kV=0.23 kW=0.276  PF=0.95
+New Load.LOAD_2_29 Phases=1 Bus1=2_469.1.4 kV=0.23 kW=0.34800000000000003  PF=0.95
+New Load.LOAD_2_30 Phases=1 Bus1=2_477.2.4 kV=0.23 kW=0.264  PF=0.95
+New Load.LOAD_2_31 Phases=1 Bus1=2_479.3.4 kV=0.23 kW=0.28200000000000003  PF=0.95
+! ---------------------------------------------------------------------------

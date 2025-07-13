@@ -1,0 +1,84 @@
+! Original network data and time series from ENWL - Low Voltage Network Solutions project (in OpenDSS format)
+!   https://www.enwl.co.uk/future-energy/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/
+
+! Adapted with length-normalized four-wire impedance data from: 
+!   Urquhart, Andrew J., and Murray Thomson. 2019. “Cable Impedance Data”. figshare. https://hdl.handle.net/2134/15544.
+!   Creative Commons Attribution-NonCommercial 3.0 Unported License.
+
+! Adaptation process described in  
+!   'Distribution Network Modeling: From Simulation Towards Optimization, Sander Claeys, Phd Dissertation, KU Leuven, Belgium 2021
+
+! Impedance transformations described in 
+!   Frederik Geth, Rahmat Heidari, and Arpan Koirala. 2022. Computational analysis of impedance transformations for four-wire power networks with sparse neutral grounding. In Proceedings of the Thirteenth ACM International Conference on Future Energy Systems (e-Energy '22). Association for Computing Machinery, New York, NY, USA, 105–113. https://doi.org/10.1145/3538637.3538844
+
+! This data is otherwise licensed under [CC BY 4.0  Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/deed.en).
+! The data can be retrieved from https://data.csiro.au/
+
+
+Clear
+Set DefaultBaseFreq=50
+
+! Three changes required to make things line up as compared to the three-wire version:
+! 1. Source impedance referred to secondary side (zero seqeunce component neglected due to D-Y)
+! 2. Voltage source referred to secondary side with Y-D transformation.
+! 3. transformer winding impedances referred fully to secondary / Y and also put in series
+!
+! --> NB! with these transformerations there is a source overvoltage. This does *NOT* exist in the physical model.
+
+! Voltage source following D-Y 30 degree phase shift [NB doesn't change the results directly]
+New Circuit.ENWL_network_1_Feeder_1_4wire basekV=0.2309401077 phases=3 ISC3=100000000 ISC1=100000000
+edit vsource.source pu=1.1193025 angle=-28.533731 phases=1
+new vsource.ENWL_network_1_Feeder_1_4wire_phaseB bus1=sourcebus.2 BasekV=0.2309401077 pu=1.1193025 angle=-151.466269 phases=1 ISC3=100000000 ISC1=100000000
+new vsource.ENWL_network_1_Feeder_1_4wire_phaseC bus1=sourcebus.3 BasekV=0.2309401077 pu=1.069328 angle=90 phases=1 ISC3=100000000 ISC1=100000000
+New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
+
+! add the source impedance and transformer impedance
+new line.sourceZ bus1=sourcebus bus2=Tx1 phases=4 R1=0.000734330 X1=0.0029372323 R0=1e-10 X0=0 C1=0 C0=0
+New line.TR_Z bus1=Tx1 bus2=sourcebus_no1 phases=4 R1=1e-10 X1=0.069222 R0=1e-10 X0=0.069222 C1=0 C0=0
+
+!New line.switch_0 phases=4 bus1=sourcebus_no1.1.2.3.4 bus2=sourcebus_no2.1.2.3.4 sw=True enabled=False ! <<<---- enable to check topology
+New line.switch_1 phases=4 bus1=sourcebus_no1.1.2.3.4 bus2=1_sourcebus.1.2.3.4 sw=True
+!New line.switch_2 phases=4 bus1=sourcebus_no2.1.2.3.4 bus2=2_sourcebus.1.2.3.4 sw=True
+
+Redirect LineCode.txt
+Redirect Lines_1.txt
+!Redirect Lines_2.txt
+Redirect Loads_1_uniform.txt
+!Redirect Loads_2_uniform.txt
+
+
+! put in the induction motors
+edit load.load_1_28 bus1=1_556.1.4 kw=4 pf=0.85
+edit load.load_1_13 bus1=1_276.1.4 kw=4 pf=0.85
+edit load.load_1_53 bus1=1_899.1.4 kw=8 pf=0.85
+
+new load.load_1_28b bus1=1_556.2.4 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load_1_13b bus1=1_276.2.4 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load_1_53b bus1=1_899.2.4 phases=1 kv=0.23 kw=8 pf=0.85
+
+new load.load_1_28c bus1=1_556.3.4 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load_1_13c bus1=1_276.3.4 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load_1_53c bus1=1_899.3.4 phases=1 kv=0.23 kw=8 pf=0.85
+
+/*
+! put in the SOP, bus 882 < ---------- use this to show SOP negative sequence injection reducing the unbalance
+new load.1_load_sop1 phases=1 bus1=1_882.1 kv=0.23 kw=9.2 kvar=0.00 model=5
+new load.1_load_sop2 phases=1 bus1=1_882.2 kv=0.23 kw=-4.6 kvar=7.9674 model=5
+new load.1_load_sop3 phases=1 bus1=1_882.3 kv=0.23 kw=-4.6 kvar=-7.9674 model=5
+*/
+
+new load.1_load_sop1 phases=1 bus1=1_882.1.4 kv=0.23 kw=0.001 kvar=0.0 model=5
+new load.1_load_sop2 phases=1 bus1=1_882.2.4 kv=0.23 kw=0.001 kvar=0.0 model=5
+new load.1_load_sop3 phases=1 bus1=1_882.3.4 kv=0.23 kw=0.001 kvar=0.0 model=5
+
+New Energymeter.substation Element=Line.switch_1 1
+
+Set mode=Snap
+
+batchedit load..* vminpu=0.1 vmaxpu=10.0
+
+set voltagebases=(0.400)
+calcv
+set maxiter=120
+Solve
+show voltages ! buses to look for for the IMs: 1_899; 1_276; 1_556

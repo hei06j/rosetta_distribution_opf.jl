@@ -216,19 +216,19 @@ end
 
 
 function objective_utilize_ripple(pm)
-    a0 = 0.033125
-    a1 = 2.75
-    a2 = 56.25
+    a0 = 0.033125 * 100
+    a1 = 2.75 * 100
+    a2 = 56.25 * 100
     Db_curve(vmneg, vmnegsqr) = vmneg <= 0.01 ? 100.0 : 
-            ((vmneg >= 0.01 && vmneg <= 0.05) ? 100.0 - (a2 * vmnegsqr + a1 * vmneg + a0) : 
+            ((vmneg >= 0.01 && vmneg <= 0.05) ? 100.0 - (a2 * vmnegsqr + a1 * vmneg - a0) : 
             0.0)
     JuMP.@operator(pm.model, Db, 2, Db_curve)
     # JuMP.add_nonlinear_operator(pm.model, 2, Db_curve; name = :Db)
-
+    
     IM_load_ids = [(load["load_bus"], sum(sqrt.(load["pd"].^2 .+ load["qd"].^2))) 
         for (i, load) in PMD.ref(pm, 0, :load) if startswith(load["name"], "IM")]
     # @show IM_load_ids
-
+    
     induction_obj = JuMP.@expression(pm.model,   
         sum(sd * (100 - Db(PMD.var(pm, 0, :vmneg)[bus_id], PMD.var(pm, 0, :vmnegsqr)[bus_id])) 
             for (bus_id, sd) in IM_load_ids)
@@ -237,7 +237,7 @@ function objective_utilize_ripple(pm)
     # ripple_obj =  JuMP.@expression(pm.model, sum(pdclinksqr for (id, pdclinksqr) in PMD.var(pm, 0)[:pdc_link_sqr]))
     ripple_obj =  JuMP.@expression(pm.model, PMD.var(pm, 0)[:pdc_link_sqr][1412])
     alpha = 0.001
-
+    
     JuMP.@objective(pm.model, Min, induction_obj + alpha * ripple_obj)
     # JuMP.@objective(pm.model, Min, induction_obj)
 end
