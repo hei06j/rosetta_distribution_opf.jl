@@ -18,26 +18,27 @@
 Clear
 Set DefaultBaseFreq=50
 
-!New Circuit.ENWL_network_1_Feeder_1_4wire BasekV=0.416 pu=1.00 ISC3=100000 ISC1=100000
+!New Circuit.ENWL_network_1_Feeder_1_4wire BasekV=0.4 pu=1.00 ISC3=100000 ISC1=100000
 
-New Circuit.ENWL_network_1_Feeder_1_4wire BasekV=0.230 pu=1.00 ISC3=100000 ISC1=100000
+New Circuit.ENWL_network_1_Feeder_1_4wire_phaseA BasekV=0.2309 pu=1.00 ISC3=100000 ISC1=100000
 edit vsource.source pu=1.0918 angle=0 phases=1
-new vsource.ENWL_network_1_Feeder_1_4wire_phaseB bus1=sourcebus.2 BasekV=0.230 pu=1.0445 angle=-121.511 phases=1 ISC3=100000 ISC1=100000
-new vsource.ENWL_network_1_Feeder_1_4wire_phaseC bus1=sourcebus.3 BasekV=0.230 pu=1.0445 angle=121.511 phases=1 ISC3=100000 ISC1=100000
+New vsource.ENWL_network_1_Feeder_1_4wire_phaseB bus1=sourcebus.2 BasekV=0.2309 pu=1.0445 angle=-121.511 phases=1 ISC3=100000 ISC1=100000
+New vsource.ENWL_network_1_Feeder_1_4wire_phaseC bus1=sourcebus.3 BasekV=0.2309 pu=1.0445 angle=121.511 phases=1 ISC3=100000 ISC1=100000
 New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
 
 /*
-New Circuit.ENWL_network_1_Feeder_1_4wire BasekV=0.230 pu=1.00 ISC3=100000 ISC1=100000
+New Circuit.ENWL_network_1_Feeder_1_4wire BasekV=0.2309 pu=1.00 ISC3=100000 ISC1=100000
 edit vsource.source pu=1.02 angle=0 phases=1
-new vsource.ENWL_network_1_Feeder_1_4wire_phaseB bus1=sourcebus.2 BasekV=0.230 pu=1.02 angle=-120 phases=1 ISC3=100000 ISC1=100000
-new vsource.ENWL_network_1_Feeder_1_4wire_phaseC bus1=sourcebus.3 BasekV=0.230 pu=1.02 angle=120 phases=1 ISC3=100000 ISC1=100000
+New vsource.ENWL_network_1_Feeder_1_4wire_phaseB bus1=sourcebus.2 BasekV=0.2309 pu=1.02 angle=-120 phases=1 ISC3=100000 ISC1=100000
+New vsource.ENWL_network_1_Feeder_1_4wire_phaseC bus1=sourcebus.3 BasekV=0.2309 pu=1.02 angle=120 phases=1 ISC3=100000 ISC1=100000
 New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
 */
 
-new vsource.ENWL_network_1_Feeder_2_4wire_phaseA bus1=sourcebus_no2.1 BasekV=0.230 pu=1.02 angle=-0 phases=1 ISC3=100000 ISC1=100000
-new vsource.ENWL_network_1_Feeder_2_4wire_phaseB bus1=sourcebus_no2.2 BasekV=0.230 pu=1.02 angle=-120 phases=1 ISC3=100000 ISC1=100000
-new vsource.ENWL_network_1_Feeder_2_4wire_phaseC bus1=sourcebus_no2.3 BasekV=0.230 pu=1.02 angle=120 phases=1 ISC3=100000 ISC1=100000
+New vsource.ENWL_network_1_Feeder_2_4wire_phaseA bus1=sourcebus_no2.1 BasekV=0.2309 pu=1.02 angle=-0 phases=1 ISC3=100000 ISC1=100000
+New vsource.ENWL_network_1_Feeder_2_4wire_phaseB bus1=sourcebus_no2.2 BasekV=0.2309 pu=1.02 angle=-120 phases=1 ISC3=100000 ISC1=100000
+New vsource.ENWL_network_1_Feeder_2_4wire_phaseC bus1=sourcebus_no2.3 BasekV=0.2309 pu=1.02 angle=120 phases=1 ISC3=100000 ISC1=100000
 New Reactor.Grounding2 phases=1 bus1=sourcebus_no2.4 bus2=sourcebus_no2.0 R=0.0 X=1E-10
+
 
 New line.switch_0 phases=4 bus1=sourcebus.1.2.3.4 bus2=sourcebus_no2.1.2.3.4 sw=True enabled=False ! <<<---- enable to check topology
 New line.switch_1 phases=4 bus1=sourcebus.1.2.3.4 bus2=1_sourcebus.1.2.3.4 sw=True
@@ -61,7 +62,6 @@ new load.load_1_53b bus1=1_899.2.4 phases=1 kv=0.23 kw=8 pf=0.85
 new load.load_1_28c bus1=1_556.3.4 phases=1 kv=0.23 kw=4 pf=0.85
 new load.load_1_13c bus1=1_276.3.4 phases=1 kv=0.23 kw=4 pf=0.85
 new load.load_1_53c bus1=1_899.3.4 phases=1 kv=0.23 kw=8 pf=0.85
-
 ! put in the SOP, bus 882
 /*
 new load.1_load_sop1 phases=1 bus1=882.1 kv=0.23 kw=9.2 kvar=0.00 model=5

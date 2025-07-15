@@ -13,19 +13,29 @@
 
 Clear
 Set DefaultBaseFreq=50
-New Circuit.ENWL_network_1_Feeder2_1and2_4wire BasekV=0.4 pu=1.00 ISC3=100000 ISC1=100000 R1=0.000734330 X1=0.0721592323 R0=1e-10 X0=0.069222 C1=0 C0=0
+New Circuit.ENWL_network_1_Feeder2_1and2_4wire BasekV=0.4 pu=1.00 ISC3=100000 ISC1=100000
 New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
 
-Redirect LineCode.txt
-
-Redirect Lines.txt
-
 ! New Line.sourceZ bus1=sourcebus.1.2.3.4 bus2=Tx1.1.2.3.4 phases=4 R1=0.000734330 X1=0.0721592323 R0=1e-10 X0=0.069222 C1=0 C0=0
-! Redirect Lines_v2.txt
 
-! Redirect Loads.txt
+Redirect LineCode.txt
+Redirect Lines.txt
 Redirect Loads_v2.txt
 
+\*
+! put in the induction motors
+edit Load.F1_LOAD28 bus1=1_556.1.4 kw=4 pf=0.85
+edit Load.F1_LOAD28 bus1=1_276.1.4 kw=4 pf=0.85
+edit Load.F1_LOAD53 bus1=1_899.1.4 kw=8 pf=0.85
+
+new Load.F1_LOAD28b bus1=1_556.2.4 phases=1 kv=0.2309 kw=4 pf=0.85
+new Load.F1_LOAD13b bus1=1_276.2.4 phases=1 kv=0.2309 kw=4 pf=0.85
+new Load.F1_LOAD53b bus1=1_899.2.4 phases=1 kv=0.2309 kw=8 pf=0.85
+
+new Load.F1_LOAD28c bus1=1_556.3.4 phases=1 kv=0.2309 kw=4 pf=0.85
+new Load.F1_LOAD13c bus1=1_276.3.4 phases=1 kv=0.2309 kw=4 pf=0.85
+new Load.F1_LOAD53c bus1=1_899.3.4 phases=1 kv=0.2309 kw=8 pf=0.85
+*/
 
 New Energymeter.substation Element=Line.F1_LINE1 1
 
