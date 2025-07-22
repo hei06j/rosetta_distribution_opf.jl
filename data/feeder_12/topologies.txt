@@ -1,0 +1,18 @@
+Master.dss
+Vm = [1.0918, 1.0445, 1.0445],   Va = [0, -121.511, 121.511]
+(sourcebus)     o-----/c-----o  (1_sourcebus)  o--------- Feeder 1
+                |
+               \o
+                |
+(sourcebus_no2) o-----/c-----o  (2_sourcebus)  o--------- Feeder 2
+Vm = [1.02, 1.02, 1.02],   Va = [0, -120, 120]
+
+
+
+
+Master.dss
+Vm = [1.1193025, 1.1193025, 1.069328],   Va = [-28.533731, 151.466269, 90]
+(sourcebus)     o------------o  (Tx1)  o---------o  (sourcebus_no1)  o-----/c-----o  (1_sourcebus)  o--------- Feeder 1
+                                                 |
+                                                \o                                                 |
+                                                 o  (sourcebus_no2)  o-----/c-----o  (1_sourcebus)  o--------- Feeder 2

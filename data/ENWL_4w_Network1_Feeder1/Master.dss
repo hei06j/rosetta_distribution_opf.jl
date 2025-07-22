@@ -18,7 +18,9 @@ New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
 
 Redirect LineCode.txt
 Redirect Lines.txt
-Redirect Loads.txt
+!Redirect Loads.txt
+Redirect Loads_v2.txt
+
 
 New Energymeter.substation Element=Line.LINE1 1
 

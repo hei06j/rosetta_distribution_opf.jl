@@ -235,7 +235,7 @@ function objective_utilize_ripple(pm)
         )
     
     # ripple_obj =  JuMP.@expression(pm.model, sum(pdclinksqr for (id, pdclinksqr) in PMD.var(pm, 0)[:pdc_link_sqr]))
-    ripple_obj =  JuMP.@expression(pm.model, PMD.var(pm, 0)[:pdc_link_sqr][1412])
+    ripple_obj =  0 #JuMP.@expression(pm.model, PMD.var(pm, 0)[:pdc_link_sqr][1412])
     alpha = 0.001
     
     JuMP.@objective(pm.model, Min, induction_obj + alpha * ripple_obj)
