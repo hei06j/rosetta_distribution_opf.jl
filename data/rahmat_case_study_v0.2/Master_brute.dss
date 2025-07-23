@@ -1,0 +1,57 @@
+Clear
+Set DefaultBaseFreq=50
+
+! update the definition of the circuit to be a full unbalanced circuit
+New Circuit.ENWL_network_1_Feeder_1_4wire basekV=6.35085 phases=3 ISC3=100000 ISC1=100000
+edit vsource.source pu=1.0918 angle=0 phases=1
+new vsource.ENWL_network_1_Feeder_1_4wire_phaseB bus1=sourcebus.2 BasekV=6.35085 pu=1.0445 angle=-121.511 phases=1 ISC3=100000 ISC1=100000
+new vsource.ENWL_network_1_Feeder_1_4wire_phaseC bus1=sourcebus.3 BasekV=6.35085 pu=1.0445 angle=121.511 phases=1 ISC3=100000 ISC1=100000
+
+new line.sourceZ bus1=SourceBus bus2=SourceBusZ phases=3 R1=0.51344 X1=2.0537 R0=1.0729 X0=3.2186
+
+! 11/416 V for +4% voltage boost
+New Transformer.TR1 Buses=[SourceBusZ 1] Conns=[Delta Wye] kVs=[11 0.416] kVAs=[150 150] XHL=6 sub=y %R=0.0001
+!edit transformer.TR1 buses=[SourceBusZ,1,]
+
+Redirect LineCode.txt
+Redirect Lines.txt
+Redirect "Loads - Copy.txt"
+
+! put in the induction motors
+edit load.load28 bus1=556.1 kw=4 pf=0.85
+edit load.load13 bus1=276.1 kw=4 pf=0.85
+edit load.load53 bus1=899.1 kw=8 pf=0.85
+
+new load.load28b bus1=556.2 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load13b bus1=276.2 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load53b bus1=899.2 phases=1 kv=0.23 kw=8 pf=0.85
+
+new load.load28c bus1=556.3 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load13c bus1=276.3 phases=1 kv=0.23 kw=4 pf=0.85
+new load.load53v bus1=899.3 phases=1 kv=0.23 kw=8 pf=0.85
+
+! put in the SOP, bus 882
+/*
+new load.load_sop1 phases=1 bus1=882.1 kv=0.23 kw=9.2 kvar=0.00 model=5
+new load.load_sop2 phases=1 bus1=882.2 kv=0.23 kw=-4.6 kvar=7.9674 model=5
+new load.load_sop3 phases=1 bus1=882.3 kv=0.23 kw=-4.6 kvar=-7.9674 model=5
+*/
+new load.load_sop1 phases=1 bus1=882.1 kv=0.23 kw=0.001 kvar=0.0 model=5
+new load.load_sop2 phases=1 bus1=882.2 kv=0.23 kw=0.001 kvar=0.0 model=5
+new load.load_sop3 phases=1 bus1=882.3 kv=0.23 kw=0.001 kvar=0.0 model=5
+
+batchedit load..* vminpu=0.1 vmaxpu=10.0
+set voltagebases=(11.0,0.400)
+
+calcv
+
+buscoords XY_Position.csv
+new energymeter.m1 element=transformer.TR1
+
+Set mode=Snap
+Solve
+!show voltage ln
+!show load.load_sop1
+!Closedi
+
+!plot

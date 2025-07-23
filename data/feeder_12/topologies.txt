@@ -10,7 +10,7 @@ Vm = [1.02, 1.02, 1.02],   Va = [0, -120, 120]
 
 
 
-Master.dss
+Master_updated.dss
 Vm = [1.1193025, 1.1193025, 1.069328],   Va = [-28.533731, 151.466269, 90]
 (sourcebus)     o------------o  (Tx1)  o---------o  (sourcebus_no1)  o-----/c-----o  (1_sourcebus)  o--------- Feeder 1
                                                  |

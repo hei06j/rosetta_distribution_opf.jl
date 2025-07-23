@@ -96,7 +96,7 @@ end
 data_path = "./data/ENWL_4w_Network1_Feeders1and2/Master.dss"
 # data_path = "./data/feeder_12/Master.dss"
 # data_path = "./data/ENWL_4w_Network1_Feeder1/Master.dss"
-# data_path = "./data/ENWL_4w_Network1_Feeders1and2 copy/Master.dss"
+data_path = "./data/ENWL_4w_Network1_Feeders1and2 copy/Master.dss"
 
 ##
 ### parse data
@@ -125,12 +125,11 @@ IM3_bus_seq = abs.(RPMD.sequence(result["solution"]["bus"]["$IM3_bus"]["vr"][1:3
 ## ##################### Conventional SOP #####################
 setting = Dict("conventional"=>true, "reconfigurable" => false, "ideal" => false, "dc_link" => true, "induction_motor" => true)
 data_math_sop = deepcopy(data_math)
-data_math_sop, IM1_bus, IM2_bus, IM3_bus = make_case(data_math_sop; combined=true)
 fbus = [parse(Int,i) for (i,bus) in data_math_sop["bus"] if occursin("1_882", bus["name"])][1] #"F1_882.1.2.3.4"
 tbus = [parse(Int,i) for (i,bus) in data_math_sop["bus"] if occursin("2_396", bus["name"])][1] #"F2_396.1.2.3.4"
 # data_math_sop["bus"]["$fbus"]["grounded"][4] = true
 # data_math_sop["bus"]["$tbus"]["grounded"][4] = true
-RPMD.add_sop_inverter_losses_v2!(data_math_sop, fbus, tbus; c_rating_a=20*ones(3), dc_link=setting["dc_link"])
+RPMD.add_sop_inverter_losses_v2!(data_math_sop, fbus, tbus; c_rating_a=25*ones(3), dc_link=setting["dc_link"])
 
 PMD.add_start_vrvi!(data_math_sop)
 model_sop = PMD.instantiate_mc_model(data_math_sop, PMD.IVRENPowerModel, RPMD.build_mc_opf_mx_sop; setting=setting);

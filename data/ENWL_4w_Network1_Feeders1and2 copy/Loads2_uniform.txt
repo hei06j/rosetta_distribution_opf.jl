@@ -1,0 +1,35 @@
+! Feeder 2
+! Imported from Loads.txt, with modified neutral terminal 
+! ---------------------------------------------------------------------------
+New Load.F2_LOAD1 Phases=1 Bus1=F2_115.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD2 Phases=1 Bus1=F2_181.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD3 Phases=1 Bus1=F2_196.3.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD4 Phases=1 Bus1=F2_219.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD5 Phases=1 Bus1=F2_222.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD6 Phases=1 Bus1=F2_223.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD7 Phases=1 Bus1=F2_232.3.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD8 Phases=1 Bus1=F2_240.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD9 Phases=1 Bus1=F2_271.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD10 Phases=1 Bus1=F2_278.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD11 Phases=1 Bus1=F2_279.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD12 Phases=1 Bus1=F2_284.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD13 Phases=1 Bus1=F2_317.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD14 Phases=1 Bus1=F2_326.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD15 Phases=1 Bus1=F2_327.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD16 Phases=1 Bus1=F2_332.3.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD17 Phases=1 Bus1=F2_345.3.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD18 Phases=1 Bus1=F2_356.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD19 Phases=1 Bus1=F2_361.3.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD20 Phases=1 Bus1=F2_362.3.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD21 Phases=1 Bus1=F2_364.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD22 Phases=1 Bus1=F2_399.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD23 Phases=1 Bus1=F2_415.3.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD24 Phases=1 Bus1=F2_440.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD25 Phases=1 Bus1=F2_443.3.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD26 Phases=1 Bus1=F2_455.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD27 Phases=1 Bus1=F2_456.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD28 Phases=1 Bus1=F2_461.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD29 Phases=1 Bus1=F2_469.1.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD30 Phases=1 Bus1=F2_477.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F2_LOAD31 Phases=1 Bus1=F2_479.3.4 kV=0.2309 kW=1.0  PF=0.95
+! ---------------------------------------------------------------------------

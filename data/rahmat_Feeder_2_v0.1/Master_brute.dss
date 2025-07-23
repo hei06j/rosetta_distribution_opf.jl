@@ -1,0 +1,29 @@
+clear
+new circuit.network1
+
+!Edit Vsource.Source BasekV=11 pu=1.00  ISC3=3000  ISC1=2500
+!Edit Vsource.Source BasekV=11 pu=1.00  ISC3=3000000  ISC1=2500000
+Edit Vsource.Source basekV=11 pu=1.00 R1=0.0001 X1=0.0001 R0=0.0001 X0=0.0001
+
+new line.sourceZ bus1=SourceBus bus2=SourceBusZ phases=3 R1=0.51344 X1=2.0537 R0=1.0729 X0=3.2186
+
+Redirect LineCode.txt
+Redirect Transformers.txt
+edit transformer.TR1 buses=[SourceBusZ,1,]
+Redirect Lines.txt
+Redirect "Loads - Copy.txt"
+
+set voltagebases="11,0.4"
+calcvoltagebases
+buscoords XY_Position_orgnl.csv
+
+new energymeter.m1 element=transformer.TR1
+
+new load.sop_2a phases=1 bus1=396.1 kv=0.23 kw=0.001 pf=1.0 model=1
+new load.sop_2b phases=1 bus1=396.2 kv=0.23 kw=0.001 pf=1.0 model=1
+new load.sop_2c phases=1 bus1=396.3 kv=0.23 kw=0.001 pf=1.0 model=1
+
+solve
+
+!plot
+!plot profile phases=all
