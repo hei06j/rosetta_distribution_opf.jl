@@ -228,6 +228,12 @@ function objective_utilize_ripple(pm)
     IM_load_ids = [(load["load_bus"], sum(sqrt.(load["pd"].^2 .+ load["qd"].^2))) 
         for (i, load) in PMD.ref(pm, 0, :load) if startswith(load["name"], "IM")]
     # @show IM_load_ids
+    # for (bus_id, sd) in IM_load_ids
+    #     @show PMD.var(pm, 0, :vmneg)[bus_id]
+    #     @show PMD.var(pm, 0, :vmnegsqr)[bus_id]
+    #     @show Db(PMD.var(pm, 0, :vmneg)[bus_id], PMD.var(pm, 0, :vmnegsqr)[bus_id])
+    #     @show sd
+    # end
     
     induction_obj = JuMP.@expression(pm.model,   
         sum(sd * (100 - Db(PMD.var(pm, 0, :vmneg)[bus_id], PMD.var(pm, 0, :vmnegsqr)[bus_id])) 
@@ -235,7 +241,8 @@ function objective_utilize_ripple(pm)
         )
     
     # ripple_obj =  JuMP.@expression(pm.model, sum(pdclinksqr for (id, pdclinksqr) in PMD.var(pm, 0)[:pdc_link_sqr]))
-    ripple_obj =  0 #JuMP.@expression(pm.model, PMD.var(pm, 0)[:pdc_link_sqr][1412])
+    # ripple_obj =  JuMP.@expression(pm.model, PMD.var(pm, 0)[:pdc_link_sqr][1412])
+    ripple_obj = 0
     alpha = 0.001
     
     JuMP.@objective(pm.model, Min, induction_obj + alpha * ripple_obj)
@@ -303,11 +310,6 @@ function build_mc_opf_mx_sop(pm::PMD.AbstractExplicitNeutralIVRModel)
     for id in PMD.ids(pm, :load)
         PMD.constraint_mc_load_power(pm, id)
         PMD.constraint_mc_load_current(pm, id)
-        
-        # if pm.setting["induction_motor"] && startswith(PMD.ref(pm, :load, id)["name"], "IM")
-        #     load_bus = PMD.ref(pm, :load, id)["load_bus"]
-        #     induction_motor_derating(pm, load_bus)
-        # end
     end
 
     for i in PMD.ids(pm, :transformer)
@@ -322,12 +324,12 @@ function build_mc_opf_mx_sop(pm::PMD.AbstractExplicitNeutralIVRModel)
     # branch_gens = Dict(branch_id[1] => gen_ids[i] for (i, branch_id) in enumerate(gen_branch_ids))
 
     sop_branches = [parse(Int, i) for (i, branch) in pm.data["branch"] if occursin("SOP_branch", branch["name"])]
-
+    
     for i in PMD.ids(pm, :branch)
         # PMD.constraint_mc_current_from(pm, i)
         # PMD.constraint_mc_current_to(pm, i)
         # PMD.constraint_mc_bus_voltage_drop(pm, i)
-
+        
         if i ∈ sop_branches
 
             if pm.setting["reconfigurable"]

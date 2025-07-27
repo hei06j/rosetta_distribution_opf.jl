@@ -13,7 +13,7 @@ New Load.F1_LOAD9 Phases=1 Bus1=F1_225.1.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD10 Phases=1 Bus1=F1_248.2.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD11 Phases=1 Bus1=F1_249.2.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD12 Phases=1 Bus1=F1_264.3.4 kV=0.2309 kW=1.0  PF=0.95
-! New Load.F1_LOAD13 Phases=1 Bus1=F1_276.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F1_LOAD13 Phases=1 Bus1=F1_276.2.4 kV=0.2309 kW=1.0  PF=0.95
 ! New Load.F1_LOAD13 Phases=3 Bus1=F1_276.1.2.3.4 kV=0.4 kW=12.0  PF=0.85
 New Load.F1_LOAD14 Phases=1 Bus1=F1_289.1.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD15 Phases=1 Bus1=F1_314.2.4 kV=0.2309 kW=1.0  PF=0.95
@@ -29,7 +29,7 @@ New Load.F1_LOAD24 Phases=1 Bus1=F1_458.3.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD25 Phases=1 Bus1=F1_502.1.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD26 Phases=1 Bus1=F1_522.2.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD27 Phases=1 Bus1=F1_539.3.4 kV=0.2309 kW=1.0  PF=0.95
-! New Load.F1_LOAD28 Phases=1 Bus1=F1_556.3.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F1_LOAD28 Phases=1 Bus1=F1_556.3.4 kV=0.2309 kW=1.0  PF=0.95
 ! New Load.F1_LOAD28 Phases=3 Bus1=F1_556.1.2.3.4 kV=0.4 kW=12.0  PF=0.85
 New Load.F1_LOAD29 Phases=1 Bus1=F1_562.1.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD30 Phases=1 Bus1=F1_563.1.4 kV=0.2309 kW=1.0  PF=0.95
@@ -55,7 +55,7 @@ New Load.F1_LOAD49 Phases=1 Bus1=F1_861.1.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD50 Phases=1 Bus1=F1_886.2.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD51 Phases=1 Bus1=F1_896.1.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD52 Phases=1 Bus1=F1_898.1.4 kV=0.2309 kW=1.0  PF=0.95
-! New Load.F1_LOAD53 Phases=1 Bus1=F1_899.2.4 kV=0.2309 kW=1.0  PF=0.95
+New Load.F1_LOAD53 Phases=1 Bus1=F1_899.2.4 kV=0.2309 kW=1.0  PF=0.95
 ! New Load.F1_LOAD53 Phases=3 Bus1=F1_899.1.2.3.4 kV=0.2309 kW=24.0  PF=0.85
 New Load.F1_LOAD54 Phases=1 Bus1=F1_900.1.4 kV=0.2309 kW=1.0  PF=0.95
 New Load.F1_LOAD55 Phases=1 Bus1=F1_906.1.4 kV=0.2309 kW=1.0  PF=0.95

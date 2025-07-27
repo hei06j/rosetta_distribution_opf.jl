@@ -111,11 +111,11 @@ function add_sop_inverter_losses_v2!(data_math, f_bus, t_bus; c_rating_a=0, reco
     Rin_Vdc = Rin / Vdc^2
     Cin_Vdc = Cin / Vdc^2
     new_branch_id = length(data_math["branch"]) + 1
-    branch_data = deepcopy(data_math["branch"]["$(new_branch_id-1)"])
+    branch_data = deepcopy(data_math["branch"]["1"])
     data_math["branch"]["$new_branch_id"] = deepcopy(branch_data)
     data_math["branch"]["$new_branch_id"]["index"] = new_branch_id
-    data_math["branch"]["$new_branch_id"]["name"] = "SOP_branch__$(f_bus)_$(t_bus)"
-    data_math["branch"]["$new_branch_id"]["source_id"] = "SOP_branch__$(f_bus)_$(t_bus)"
+    data_math["branch"]["$new_branch_id"]["name"] = "SOP_branch_$(f_bus)_$(t_bus)"
+    data_math["branch"]["$new_branch_id"]["source_id"] = "SOP_branch_$(f_bus)_$(t_bus)"
     # data_math["branch"]["$new_branch_id"]["f_connections"] = branch_data["f_connections"][[1,4]]
     # data_math["branch"]["$new_branch_id"]["t_connections"] = branch_data["t_connections"][[1,4]]
     # data_math["branch"]["$new_branch_id"]["rate_a"] = [Inf, Inf] # branch_data["rate_a"][[1,4]]
@@ -167,4 +167,6 @@ function add_sop_inverter_losses_v2!(data_math, f_bus, t_bus; c_rating_a=0, reco
         data_math["bus"]["$t_bus"]["bus_type"] = 1
     end
     
+    @show new_branch_id
+    return new_branch_id
 end

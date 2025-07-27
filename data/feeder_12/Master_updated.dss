@@ -26,10 +26,11 @@ Set DefaultBaseFreq=50
 ! --> NB! with these transformerations there is a source overvoltage. This does *NOT* exist in the physical model.
 
 ! Voltage source following D-Y 30 degree phase shift [NB doesn't change the results directly]
-New Circuit.ENWL_network_1_Feeder_1_4wire basekV=0.2309401077 phases=3 ISC3=100000000 ISC1=100000000
-edit vsource.source pu=1.1193025 angle=-28.533731 phases=1
-new vsource.ENWL_network_1_Feeder_1_4wire_phaseB bus1=sourcebus.2 BasekV=0.2309401077 pu=1.1193025 angle=-151.466269 phases=1 ISC3=100000000 ISC1=100000000
-new vsource.ENWL_network_1_Feeder_1_4wire_phaseC bus1=sourcebus.3 BasekV=0.2309401077 pu=1.069328 angle=90 phases=1 ISC3=100000000 ISC1=100000000
+New Circuit.ENWL_network_1_Feeder_1_4wire basekV=0.4 phases=3 ISC3=100000000 ISC1=100000000
+!New Circuit.ENWL_network_1_Feeder_1_4wire basekV=0.2309401077 phases=3 ISC3=100000000 ISC1=100000000
+!edit vsource.source pu=1.1193025 angle=-28.533731 phases=1
+!new vsource.ENWL_network_1_Feeder_1_4wire_phaseB bus1=sourcebus.2 BasekV=0.2309401077 pu=1.1193025 angle=-151.466269 phases=1 ISC3=100000000 ISC1=100000000
+!new vsource.ENWL_network_1_Feeder_1_4wire_phaseC bus1=sourcebus.3 BasekV=0.2309401077 pu=1.069328 angle=90 phases=1 ISC3=100000000 ISC1=100000000
 New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
 
 ! add the source impedance and transformer impedance

@@ -110,32 +110,20 @@ function add_induction_motors!(data_math; combined=true)
     return data_math, IM1_bus, IM2_bus, IM3_bus
 end
 
-##
-
-# data_path = "./data/ENWL_4w_Network1_Feeders1and2/Master.dss"
-data_path = "./data/feeder_12/Master.dss"
-data_path = "./data/feeder_12/Master_updated_v1.dss"
-
-# data_path = "./data/ENWL_4w_Network1_Feeder1/Master.dss"
-data_path = "./data/ENWL_4w_Network1_Feeders1and2 copy/Master.dss"
+## ######################## Feeder 1 : No SOP #####################
 data_path = "./data/ENWL_4w_Network1_Feeders1and2 copy/Master1.dss"
-data_path = "./data/ENWL_4w_Network1_Feeders1and2 copy/Master2.dss"
-data_path = "./data/ENWL_4w_Network1_Feeders1and2 copy/Master_updated.dss"
 
-###
-### parse data
 data_eng = PMD.parse_file(data_path, transformations=[PMD.transform_loops!, PMD.reduce_lines!])
 data_eng["settings"]["sbase_default"] = 1
 data_eng["voltage_source"]["source"]["rs"] *= 0
 data_eng["voltage_source"]["source"]["xs"] *= 0
 data_math = PMD.transform_data_model(data_eng, kron_reduce=false, phase_project=false)
-
 modify_sourcebus_voltage!(data_math)
-# add_voltage_source_feeder!(data_math)
 data_math, IM1_bus, IM2_bus, IM3_bus = add_induction_motors!(data_math; combined=true)
-
 # f1_1_bus = [parse(Int,i) for (i,bus) in data_math["bus"] if bus["name"]=="f1_1"][1]
 # data_math["bus"]["$f1_1_bus"]["grounded"][4] = 1
+
+data_eng1 = deepcopy(data_eng)
 
 ### ##################### No SOP #####################
 # setting = Dict("conventional"=>true, "reconfigurable" => false, "ideal" => false, "dc_link" => true, "induction_motor" => true)
@@ -150,148 +138,35 @@ data_math, IM1_bus, IM2_bus, IM3_bus = add_induction_motors!(data_math; combined
 # [IM1_bus_seq[3] ; IM2_bus_seq[3] ; IM3_bus_seq[3]]
 
 
-### ##################### Conventional SOP #####################
-setting = Dict("conventional"=>true, "reconfigurable" => false, "ideal" => false, "dc_link" => true, "induction_motor" => true)
-data_math_sop = deepcopy(data_math)
-fbus = [parse(Int,i) for (i,bus) in data_math_sop["bus"] if occursin("1_882", bus["name"])][1] #"F1_882.1.2.3.4"  25?
-tbus = [parse(Int,i) for (i,bus) in data_math_sop["bus"] if occursin("2_396", bus["name"])][1] #"F2_396.1.2.3.4"  123?
-# data_math_sop["bus"]["$fbus"]["grounded"][4] = true
-# data_math_sop["bus"]["$tbus"]["grounded"][4] = true
-mm = RPMD.add_sop_inverter_losses_v2!(data_math_sop, fbus, tbus; c_rating_a=25*ones(3), dc_link=setting["dc_link"])
+## ######################## Feeder 2 : No SOP #####################
+data_path = "./data/ENWL_4w_Network1_Feeders1and2 copy/Master2.dss"
 
-load_id1 = [i for (i,load) in data_math_sop["load"] if load["load_bus"]==fbus][1]
-load_id2 = [i for (i,load) in data_math_sop["load"] if load["load_bus"]==tbus][1]
-delete!(data_math_sop["load"], load_id1)
-delete!(data_math_sop["load"], load_id2)
-
-PMD.add_start_vrvi!(data_math_sop)
-model_sop = PMD.instantiate_mc_model(data_math_sop, PMD.IVRENPowerModel, RPMD.build_mc_opf_mx_sop; setting=setting);
-result_conv = PMD.optimize_model!(model_sop, optimizer=ipopt_solver)
-
-IMbus_vmneg = [result_conv["solution"]["bus"]["$bus_id"]["vmneg"] for bus_id in [IM1_bus, IM2_bus, IM3_bus]] .*100
-# IM1_bus_seq_sop = abs.(RPMD.sequence(result_conv["solution"]["bus"]["$IM1_bus"]["vr"][1:3] .+ im*result_conv["solution"]["bus"]["$IM1_bus"]["vi"][1:3])) .* 100
-# IM2_bus_seq_sop = abs.(RPMD.sequence(result_conv["solution"]["bus"]["$IM2_bus"]["vr"][1:3] .+ im*result_conv["solution"]["bus"]["$IM2_bus"]["vi"][1:3])) .* 100
-# IM3_bus_seq_sop = abs.(RPMD.sequence(result_conv["solution"]["bus"]["$IM3_bus"]["vr"][1:3] .+ im*result_conv["solution"]["bus"]["$IM3_bus"]["vi"][1:3])) .* 100
-
-# IMbus_vmneg_nosop = [IM1_bus_seq[3] ; IM2_bus_seq[3] ; IM3_bus_seq[3]]
-
-
-##
-using Plots
-
-a0 = 0.033125*100
-a1 = 2.75*100
-a2 = 56.25*100
-Db_curve(vmneg, vmnegsqr) = vmneg <= 0.01 ? 100.0 : 
-        ((vmneg >= 0.01 && vmneg <= 0.05) ? 100.0 - (a2 * vmnegsqr + a1 * vmneg - a0) : 
-        0.0)
-
-
-IM_load_ids = [(load["load_bus"], sum(sqrt.(load["pd"].^2 .+ load["qd"].^2))) for (i, load) in data_math_sop["load"] if startswith(load["name"], "IM")]
-
-induction_obj = [sd * (100 - Db_curve(result_conv["solution"]["bus"]["$bus_id"]["vmneg"], result_conv["solution"]["bus"]["$bus_id"]["vmnegsqr"])) for (bus_id, sd) in IM_load_ids]
-
-IMbus_vmneg ./= 100
-IMbus_vmneg_nosop ./= 100
-
-vmneg = collect(0.0:0.001:0.05)
-plot(vmneg, Db_curve.(vmneg, vmneg.^2), title="IM derating factors", label="")
-plot!([IMbus_vmneg[1]], [Db_curve.(IMbus_vmneg[1], IMbus_vmneg[1].^2)], seriestype=:scatter, lw=2, label="IM1 w SOP", color=1)
-plot!([IMbus_vmneg[2]], [Db_curve.(IMbus_vmneg[2], IMbus_vmneg[2].^2)], seriestype=:scatter, lw=2, label="IM2 w SOP", color=2)
-plot!([IMbus_vmneg[3]], [Db_curve.(IMbus_vmneg[3], IMbus_vmneg[3].^2)], seriestype=:scatter, lw=2, label="IM3 w SOP", color=3)
-
-plot!([IMbus_vmneg_nosop[1]], [Db_curve.(IMbus_vmneg_nosop[1], IMbus_vmneg_nosop[1].^2)], seriestype=:scatter, lw=2, label="IM1 w/o SOP", color=1)
-plot!([IMbus_vmneg_nosop[2]], [Db_curve.(IMbus_vmneg_nosop[2], IMbus_vmneg_nosop[2].^2)], seriestype=:scatter, lw=2, label="IM2 w/o SOP", color=2)
-plot!([IMbus_vmneg_nosop[3]], [Db_curve.(IMbus_vmneg_nosop[3], IMbus_vmneg_nosop[3].^2)], seriestype=:scatter, lw=2, label="IM3 w/o SOP", color=3)
-
-
-
-IM_load_ids = [(load["load_bus"], sum(sqrt.(load["pd"].^2 .+ load["qd"].^2))) 
-    for (i, load) in PMD.ref(pm, 0, :load) if startswith(load["name"], "IM")]
-# @show IM_load_ids
-
-induction_obj = JuMP.@expression(pm.model,   
-    sum(sd * (100 - Db(PMD.var(pm, 0, :vmneg)[bus_id], PMD.var(pm, 0, :vmnegsqr)[bus_id])) 
-        for (bus_id, sd) in IM_load_ids)
-    )
-## ############################################################
-###############################################################
-data_path = "./data/ENWL_4w_Network1_Feeder1/Master.dss"
-data_eng = PMD.parse_file(data_path, transformations=[PMD.transform_loops!])
+data_eng = PMD.parse_file(data_path, transformations=[PMD.transform_loops!, PMD.reduce_lines!])
 data_eng["settings"]["sbase_default"] = 1
 data_eng["voltage_source"]["source"]["rs"] *= 0
 data_eng["voltage_source"]["source"]["xs"] *= 0
 data_math = PMD.transform_data_model(data_eng, kron_reduce=false, phase_project=false)
+# f1_1_bus = [parse(Int,i) for (i,bus) in data_math["bus"] if bus["name"]=="f1_1"][1]
+# data_math["bus"]["$f1_1_bus"]["grounded"][4] = 1
 
-sourcebus = [parse(Int,i) for (i,bus) in data_math["bus"] if occursin("sourcebus", bus["name"])][1]
-data_math["bus"]["$sourcebus"]["vm"] = [1.0918, 1.0445, 1.0445, 0]
-data_math["bus"]["$sourcebus"]["vmin"] = copy(data_math["bus"]["$sourcebus"]["vm"])
-data_math["bus"]["$sourcebus"]["vmax"] = copy(data_math["bus"]["$sourcebus"]["vm"])
-data_math["bus"]["$sourcebus"]["va"] = [0, -121.511, 121.511, 0] .* pi/180
+data_eng2 = deepcopy(data_eng)
 
-IM1_bus = [parse(Int,i) for (i,bus) in data_math["bus"] if occursin("276", bus["name"])][1] #"F1_882.1.2.3.4"
-IM2_bus = [parse(Int,i) for (i,bus) in data_math["bus"] if occursin("556", bus["name"])][1] #"F1_882.1.2.3.4"
-IM3_bus = [parse(Int,i) for (i,bus) in data_math["bus"] if occursin("899", bus["name"])][1] #"F1_882.1.2.3.4"
 
-sbase = data_math["settings"]["sbase"]                          # p.u.
-sbace_factor = data_math["settings"]["power_scale_factor"]      # 
-vbase = [v for v in values(data_math["settings"]["vbases_default"])][1]
-vbase_factor = data_math["settings"]["voltage_scale_factor"]
-Ibase = (sbase * sbace_factor) / (vbase * vbase_factor)  #[kA]
-zbase = (vbase * vbase_factor)^2 / (sbase * sbace_factor)
-
-for bus_id in [IM1_bus, IM2_bus, IM3_bus]
-    load_id = length(data_math["load"]) + 1
-    data_math["load"]["$load_id"] = deepcopy(data_math["load"]["1"])
-    # load_id = [i for (i,load) in data_math["load"] if load["load_bus"] == bus_id][1]
-    pd = bus_id == IM3_bus ?  8*[1e3, 1e3, 1e3] : 4*[1e3, 1e3, 1e3]
-    data_math["load"]["$load_id"]["connections"] = [1, 2, 3, 4]
-    data_math["load"]["$load_id"]["vbase"] = 0.4
-    data_math["load"]["$load_id"]["index"] = load_id
-    data_math["load"]["$load_id"]["load_bus"] = bus_id
-    data_math["load"]["$load_id"]["name"] = "IM_$bus_id"
-    data_math["load"]["$load_id"]["source_id"] = "load.IM_$bus_id"
-    data_math["load"]["$load_id"]["pd"] = pd / (sbase * sbace_factor)
-    data_math["load"]["$load_id"]["pf"] = 0.85
-    data_math["load"]["$load_id"]["qd"] = data_math["load"]["$load_id"]["pd"] * tan(acos(data_math["load"]["$load_id"]["pf"]))
-end
-
-for (i, bus) in data_math["bus"]
-    if length(bus["vmax"]) < 4
-        @show bus
-    end
-end
-
-setting = Dict("conventional"=>false, "reconfigurable" => false, "ideal" => false, "dc_link" => false, "induction_motor" => true)
-PMD.add_start_vrvi!(data_math)
-model = PMD.instantiate_mc_model(data_math, PMD.IVRENPowerModel, RPMD.build_mc_opf_mx_sop; setting=setting)
-result_noconv = PMD.optimize_model!(model, optimizer=ipopt_solver)
-
-for (i, bus) in data_math["bus"]
-    if length(bus["vmax"]) < 4
-        @show bus
-    end
-end
-
+# PMD.add_start_vrvi!(data_math)
+# # model = PMD.instantiate_mc_model(data_math, PMD.IVRENPowerModel, PMD.build_mc_opf);
+# model = PMD.instantiate_mc_model(data_math, PMD.IVRENPowerModel, RPMD.build_mc_opf_mx_sop; setting=setting);
+# result = PMD.optimize_model!(model, optimizer=ipopt_solver)
 
 ##
-model = JuMP.Model(ipopt_solver)
-JuMP.@variable(model, w, lower_bound=5.0, upper_bound=10.0)
-JuMP.@variable(model, x, lower_bound=5.0, upper_bound=10.0)
-JuMP.@variable(model, y, lower_bound=-10, upper_bound=0.0)
-JuMP.@variable(model, z, lower_bound=-10.0, upper_bound=10.0)
-JuMP.@constraint(model, w + y + z == 4)  # 7 + -1 + -2 = 4
-JuMP.@constraint(model, x + y + z == 2)  # 5 + -1 + -2 = 2
-# JuMP.@constraint(model, w + z == 5)     # 7 + -2 = 5
-# JuMP.@constraint(model, x + y == 4)     # 5 + -1 = 4
+data_eng["bus"]["sourcebus2"] = deepcopy(data_eng["bus"]["sourcebus"])
+source_branch2_id = [i for (i,line) in data_eng["line"] if line["f_bus"] == "sourcebus"][1]
+data_eng["line"][source_branch2_id]["f_bus"] = "sourcebus2"
+data_eng["voltage_source"]["source2"] = deepcopy(data_eng["voltage_source"]["source"])
 
-JuMP.@objective(model, Max, w^2 + x^2 + y^2 + z^2)
-# JuMP.@objective(model, Max, w + x + y + z)
-# JuMP.@objective(model, Min, z)
-# JuMP.@objective(model, Max, z)
 
-JuMP.optimize!(model)
-@show JuMP.termination_status(model)
 
-JuMP.value.(JuMP.all_variables(model))
+merge!(data_eng["bus"], data_eng1["bus"])
+merge!(data_eng["line"], data_eng1["line"])
+merge!(data_eng["voltage_source"], data_eng1["voltage_source"])
 
+data_math = PMD.transform_data_model(data_eng, kron_reduce=false, phase_project=false)

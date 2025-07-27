@@ -1,0 +1,38 @@
+! Original network data and time series from ENWL - Low Voltage Network Solutions project (in OpenDSS format)
+!   https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/
+
+! Adapted with length-normalized four-wire impedance data from: 
+!   Urquhart, Andrew J., and Murray Thomson. 2019. “Cable Impedance Data”. figshare. https://hdl.handle.net/2134/15544.
+!   Creative Commons Attribution-NonCommercial 3.0 Unported License.
+
+! Adaptation process described in  
+!   'Distribution Network Modeling: From Simulation Towards Optimization, Sander Claeys, Phd Dissertation, KU Leuven, Belgium 2021
+
+! Impedance transformations described in 
+!   'Computational Analysis of Impedance Transformations for Four-Wire Power Networks with Sparse Neutral Grounding', Frederik Geth, Rahmat Heidarihaei, Arpan Koirala, submitted to ACM E-energy 2022.
+
+Clear
+Set DefaultBaseFreq=50
+New Circuit.ENWL_network_1_Feeder2_1and2_4wire BasekV=11 pu=1.02 ISC3=100000 ISC1=100000
+New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
+
+new line.sourceZ2 bus1=SourceBus bus2=SourceBusZ2 phases=4 R1=0.51344 X1=2.0537 R0=1.0729 X0=3.2186
+
+! 11/416 V for +4% voltage boost
+New Transformer.TR2 Buses=[SourceBusZ2 F2_1] Conns=[Delta Wye] kVs=[11 0.4] kVAs=[150 150] XHL=6 sub=y %R=0
+New Reactor.Grounding2 phases=1 bus1=F2_1.4 bus2=F2_1.0 R=0.0 X=1E-10
+
+
+Redirect LineCode.txt
+
+Redirect Lines2.txt
+
+Redirect Loads2_uniform.txt
+
+new load.F2_load_sop1 phases=1 bus1=F2_396.1.4 kv=0.2309 kw=0.001 kvar=0.0 model=5
+new load.F2_load_sop2 phases=1 bus1=F2_396.2.4 kv=0.2309 kw=0.001 kvar=0.0 model=5
+new load.F2_load_sop3 phases=1 bus1=F2_396.3.4 kv=0.2309 kw=0.001 kvar=0.0 model=5
+
+Set mode=Snap
+Solve
+Closedi

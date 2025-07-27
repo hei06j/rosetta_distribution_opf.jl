@@ -703,7 +703,7 @@ function constraint_mc_bus_voltage_magnitude_negative_sequence(pm::PMD.AbstractU
     aim = imag(a)
     a2re = real(a^2)
     a2im = imag(a^2)
-
+    
     # real and imaginary components of U-
     vreneg = JuMP.@expression(pm.model,
         (vr_a + a2re*vr_b - a2im*vi_b + are*vr_c - aim*vi_c)/3
@@ -720,7 +720,7 @@ function constraint_mc_bus_voltage_magnitude_negative_sequence(pm::PMD.AbstractU
 
     vmneg = PMD.var(pm, nw, :vmneg)[bus_id] = JuMP.@variable(pm.model, base_name="$(nw)_vmneg_$bus_id", start = 0)
     PMD.sol(pm, nw, :bus, bus_id)[:vmneg] = vmneg
-        
+    
     JuMP.@constraint(pm.model, vmneg * vmneg == vmnegsqr)
     JuMP.@constraint(pm.model, vmneg >= 0)
 
