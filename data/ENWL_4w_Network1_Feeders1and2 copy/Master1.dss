@@ -29,6 +29,10 @@ Redirect Lines1.txt
 
 Redirect Loads1_uniform.txt
 
+
+New line.switch_1 phases=4 bus1=F1_882.1.2.3.4 bus2=F1_883.1.2.3.4 sw=True
+
+
 /*
 ! put in the induction motors
 edit load.load_1_28 bus1=F1_556.1.4 kw=4 pf=0.85

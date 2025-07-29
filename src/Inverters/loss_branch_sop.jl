@@ -96,9 +96,9 @@ end
 function add_sop_inverter_losses_v2!(data_math, f_bus, t_bus; c_rating_a=0, reconfigurable=false, dc_link=true)
     sbase = data_math["settings"]["sbase"]                          # p.u.
     sbace_factor = data_math["settings"]["power_scale_factor"]      # 
-    vbase = [v for v in values(data_math["settings"]["vbases_default"])][1]
+    # vbase = [v for v in values(data_math["settings"]["vbases_default"])][2]
     vbase_factor = data_math["settings"]["voltage_scale_factor"]
-    # vbase = 0.2309      # [kV]  data_math["settings"]["vbases_default"]["5"]
+    vbase = 0.2309      # [kV]  data_math["settings"]["vbases_default"]["5"]
     Ibase = (sbase * sbace_factor) / (vbase * vbase_factor)  #[kA]
     zbase = (vbase * vbase_factor)^2 / (sbase * sbace_factor)
     vbase_max = vbase*1.1  # [V]
@@ -155,7 +155,7 @@ function add_sop_inverter_losses_v2!(data_math, f_bus, t_bus; c_rating_a=0, reco
     end
 
     if dc_link 
-        data_math["branch"]["$new_branch_id"]["pdcmin"] = -Inf
+        data_math["branch"]["$new_branch_id"]["pdcmin"] = 0
         data_math["branch"]["$new_branch_id"]["pdcmax"] = Inf
     end
 
@@ -167,6 +167,5 @@ function add_sop_inverter_losses_v2!(data_math, f_bus, t_bus; c_rating_a=0, reco
         data_math["bus"]["$t_bus"]["bus_type"] = 1
     end
     
-    @show new_branch_id
     return new_branch_id
 end

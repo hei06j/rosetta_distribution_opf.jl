@@ -168,5 +168,8 @@ data_eng["voltage_source"]["source2"] = deepcopy(data_eng["voltage_source"]["sou
 merge!(data_eng["bus"], data_eng1["bus"])
 merge!(data_eng["line"], data_eng1["line"])
 merge!(data_eng["voltage_source"], data_eng1["voltage_source"])
+data_eng["switch"] = deepcopy(data_eng1["switch"])
+data_eng["switch"]["switch_1"]["t_bus"] = "f2_396"
+
 
 data_math = PMD.transform_data_model(data_eng, kron_reduce=false, phase_project=false)
