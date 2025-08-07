@@ -43,6 +43,7 @@ module rosetta_distribution_opf
 
     include("./inverters/opf.jl")
     include("./inverters/opf_sop.jl")
+    include("./inverters/opf_sizing.jl")
     include("./inverters/loss_branch_inverter.jl")
     include("./inverters/loss_branch_sop.jl")
 

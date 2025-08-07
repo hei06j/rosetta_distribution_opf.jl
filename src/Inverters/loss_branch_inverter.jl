@@ -79,7 +79,7 @@ function add_inverter_losses!(data_math, gen_id; c_rating_a=0, reconfigurable=fa
     end
 
     if dc_link
-        gen["pdcmin"] = -Inf
+        gen["pdcmin"] = 0 #-Inf
         gen["pdcmax"] = Inf
         # data_math["branch"]["$new_branch_id"]["pdcmin"] = -Inf
         # data_math["branch"]["$new_branch_id"]["pdcmax"] = Inf
