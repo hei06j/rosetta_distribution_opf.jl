@@ -1,3 +1,34 @@
+
+"""
+function variable_mc_generator_power_rating(
+    pm::ExplicitNeutralModels;
+    nw::Int=nw_id_default,
+    bounded::Bool=true,
+    report::Bool=true
+)
+
+Creates generator active power variables `:pg` for models with explicit neutrals
+"""
+function variable_mc_generator_power_rating(pm::PMD.ExplicitNeutralModels; nw::Int=PMD.nw_id_default, report::Bool=true)
+    converter_ids = [1]  # TODO fix this
+    
+    # int_dim = Dict(i => PMD._infer_int_dim_unit(gen, false) for (i,gen) in PMD.ref(pm, nw, :gen))
+    srating = PMD.var(pm, nw)[:srating] = Dict(i => JuMP.@variable(pm.model,
+            base_name="$(nw)_srating_$(i)",
+        ) for i in converter_ids
+    )
+
+    for (i,gen) in PMD.ref(pm, nw, :gen)
+        if i in converter_ids
+            PMD.set_lower_bound.(srating[i], gen["srating_min"])
+            PMD.set_upper_bound.(srating[i], gen["srating_max"])
+        end
+    end
+
+    report && IM.sol_component_value(pm, PMD.pmd_it_sym, nw, :gen, :srating, converter_ids, srating)
+end
+
+
 """
 	function variable_mc_converter_pdclink(
 		pm::ExplicitNeutralModels;
@@ -9,7 +40,7 @@
 Creates generator active power variables `:pg` for models with explicit neutrals
 """
 function variable_mc_converter_pdclink(pm::PMD.ExplicitNeutralModels; nw::Int=PMD.nw_id_default, bounded::Bool=true, report::Bool=true)
-    converter_ids = [1]
+    converter_ids = [1] # TODO fix this
 
     pdclink_sqr = PMD.var(pm, nw)[:pdclink_sqr] = Dict(i => JuMP.@variable(pm.model,
             base_name="$(nw)_pdclink_sqr",
@@ -89,6 +120,132 @@ function constraint_mc_converter_pdclink(pm::PMD.AbstractNLExplicitNeutralIVRMod
 end
 
 
+# GENERATOR - Constraints
+
+"""
+    function constraint_mc_generator_power_rating(
+        pm::ExplicitNeutralModels,
+        id::Int;
+        nw::Int=PMD.nw_id_default,
+        report::Bool=true
+    )
+
+Constrains generator power variables for models with explicit neutrals.
+"""
+function constraint_mc_generator_power_rating(pm::PMD.ExplicitNeutralModels, id::Int; nw::Int=PMD.nw_id_default, report::Bool=true)
+    generator = PMD.ref(pm, nw, :gen, id)
+    bus = PMD.ref(pm, nw,:bus, generator["gen_bus"])
+
+    configuration = generator["configuration"]
+
+    N = length(generator["connections"])
+
+    if configuration==PMD.WYE || length(pmin)==1
+        constraint_mc_generator_power_rating_wye(pm, nw, id, bus["index"], generator["connections"]; report=report)
+    else
+        # constraint_mc_generator_power_rating_delta(pm, nw, id, bus["index"], generator["connections"], pmin, pmax, qmin, qmax; report=report)
+    end
+end
+
+
+function constraint_mc_generator_current_limit_rating(pm::PMD.AbstractExplicitNeutralIVRModel, id::Int; nw::Int=PMD.nw_id_default, report::Bool=true, bounded::Bool=true)
+    generator = PMD.ref(pm, nw, :gen, id)
+    bus = PMD.ref(pm, nw,:bus, generator["gen_bus"])
+
+    # if haskey(generator, "c_rating") && any(generator["c_rating"] .< Inf)
+    constraint_mc_generator_current_limit_rating(pm, nw, id, bus["index"], generator["connections"]; report=report, bounded=bounded)
+    # end
+end
+
+
+"""
+	function constraint_mc_generator_power_rating_wye(
+		pm::AbstractNLExplicitNeutralIVRModel,
+		nw::Int,
+		id::Int,
+		bus_id::Int,
+		connections::Vector{Int},
+		report::Bool=true
+	)
+
+For IVR models with explicit neutrals,
+creates non-linear expressions for the generator power `:pd` and `:qd`
+of wye-connected generators as a function of voltage and current
+"""
+function constraint_mc_generator_power_rating_wye(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}; report::Bool=true)
+    vr = PMD.var(pm, nw, :vr, bus_id)
+    vi = PMD.var(pm, nw, :vi, bus_id)
+    crg = PMD.var(pm, nw, :crg, id)
+    cig = PMD.var(pm, nw, :cig, id)
+
+    phases = connections[1:end-1]
+    n      = connections[end]
+
+    pg = JuMP.NonlinearExpr[]
+    qg = JuMP.NonlinearExpr[]
+
+    srating = PMD.var(pm, nw, :srating, id)
+    pmin = zero(3)              # TODO when considering batteries, this should be -srating/3 * ones(3)
+    pmax = srating/3 * ones(3)
+    qmin = -srating/3 * ones(3)
+    qmax = srating/3 * ones(3)
+
+    for (idx, p) in enumerate(phases)
+        push!(pg, JuMP.@expression(pm.model,   (vr[p]-vr[n])*crg[idx]  + (vi[p]-vi[n])*cig[idx]))
+        push!(qg, JuMP.@expression(pm.model, - (vr[p]-vr[n])*cig[idx]  + (vi[p]-vi[n])*crg[idx]))
+    end
+
+    JuMP.@constraint(pm.model, sum(pmin) <= sum(pg))
+    JuMP.@constraint(pm.model, sum(pmax) >= sum(pg))
+    JuMP.@constraint(pm.model, sum(qmin) <= sum(qg))
+    JuMP.@constraint(pm.model, sum(qmax) >= sum(qg))
+
+    PMD.var(pm, nw, :pg)[id] = pg
+    PMD.var(pm, nw, :qg)[id] = qg
+
+    if report
+        PMD.sol(pm, nw, :gen, id)[:pg] = pg
+        PMD.sol(pm, nw, :gen, id)[:qg] = qg
+    end
+end
+
+
+"""
+	function constraint_mc_generator_current_limit_rating(
+		pm::AbstractExplicitNeutralIVRModel,
+		nw::Int,
+		id::Int,
+		connections::Vector{Int};
+		report::Bool=true,
+		bounded::Bool=true
+	)
+
+For IVR models with explicit neutrals,
+creates expressions for the terminal current flows `:crg_bus` and `:cig_bus` of wye-connected generators
+"""
+function constraint_mc_generator_current_limit_rating(pm::PMD.AbstractExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}; report::Bool=true, bounded::Bool=true)
+    crg_bus = PMD.var(pm, nw, :crg_bus)[id]
+    cig_bus = PMD.var(pm, nw, :cig_bus)[id]
+    
+    vr = PMD.var(pm, nw, :vr, bus_id)
+    vi = PMD.var(pm, nw, :vi, bus_id)
+
+    phases = connections[1:end-1]
+    n      = connections[end]
+
+    srating = PMD.var(pm, nw, :srating, id)
+
+    JuMP.@constraint(pm.model, ((vr[phases].-vr[n]).^2 .+ (vi[phases].-vi[n]).^2) .* (crg_bus[phases].^2 .+ cig_bus[phases].^2) .<= (srating*ones(3)/3).^2)
+
+    # @assert length(c_rating) == length(crg_bus)
+    # cnds_finite_nonzero_rating = [c for (c,r) in enumerate(c_rating) if (r<Inf && r!==0)]
+    # cnds_zero_rating = [c for (c,r) in enumerate(c_rating) if r==0]
+
+    # JuMP.@constraint(pm.model, [c in cnds_finite_nonzero_rating], crg_bus[c]^2+cig_bus[c]^2 <= c_rating[c]^2)
+    # JuMP.@constraint(pm.model, [c in cnds_zero_rating], crg_bus[c] == 0)
+    # JuMP.@constraint(pm.model, [c in cnds_zero_rating], cig_bus[c] == 0)
+end
+
 
 """
 function build_mc_opf_mx(
@@ -115,6 +272,7 @@ function build_mc_opf_sizing(pm::PMD.AbstractExplicitNeutralIVRModel)
     PMD.variable_mc_transformer_current(pm)
     PMD.variable_mc_transformer_power(pm)
     PMD.variable_mc_switch_current(pm)
+    variable_mc_generator_power_rating(pm)
 
     if pm.setting["dc_link"]
         variable_mc_converter_pdclink(pm)
@@ -136,10 +294,11 @@ function build_mc_opf_sizing(pm::PMD.AbstractExplicitNeutralIVRModel)
 
     for id in PMD.ids(pm, :gen)
         if id ∈ converter_ids  # Generators connected with inverter
-            constraint_mc_generator_power(pm, id)
+
+            constraint_mc_generator_power_rating(pm, id)
             PMD.constraint_mc_generator_current(pm, id)
             # constraint_mc_generator_current(pm, id)
-            constraint_mc_generator_current_limit(pm, id)
+            constraint_mc_generator_current_limit_rating(pm, id)
             
             if pm.setting["dc_link"]
                 # constraint_mc_inverter_dc_link_ripple_power(pm, id)

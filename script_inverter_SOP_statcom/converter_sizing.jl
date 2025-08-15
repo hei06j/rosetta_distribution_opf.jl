@@ -21,7 +21,6 @@ PMD.silence!()
 
 ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "sb"=>"yes", "warm_start_init_point"=>"yes", "max_iter"=>100000)
 
-
 data_path = "./data/inverter_4w_wye_unbalanced_loads_2bus.dss"
 
 
@@ -33,6 +32,8 @@ function build_inverter_case(data_eng, setting)
     pv_gen_ids = [i for (i, gen) in data_math["gen"] if !occursin("source", gen["name"])]
     for gen_id in pv_gen_ids
         RPMD.add_inverter_losses!(data_math, gen_id; c_rating_a=30*ones(3))
+        data_math["gen"][gen_id]["srating_min"] = 0.0
+        data_math["gen"][gen_id]["srating_max"] = 10
     end
 
     return data_math
@@ -92,8 +93,9 @@ result["solution"]["gen"]["1"]
 
 ## TODOs
 """
+    - make multi-period
     - add different objective functions 
-    - converter size as variable
+    - how to include batteries?
     - scenarios
     - (how to deal with the converter branch? We should do the study with a lossless converter)
     - 

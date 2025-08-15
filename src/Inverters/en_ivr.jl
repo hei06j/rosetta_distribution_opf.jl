@@ -318,6 +318,7 @@ end
 		nw::Int,
 		id::Int,
 		connections::Vector{Int};
+        c_rating::Vector{Int};
 		report::Bool=true,
 		bounded::Bool=true
 	)
