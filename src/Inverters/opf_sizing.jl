@@ -13,15 +13,19 @@ function variable_mc_generator_power_rating(pm::PMD.ExplicitNeutralModels; nw::I
     converter_ids = [1]  # TODO fix this
     
     # int_dim = Dict(i => PMD._infer_int_dim_unit(gen, false) for (i,gen) in PMD.ref(pm, nw, :gen))
-    srating = PMD.var(pm, nw)[:srating] = Dict(i => JuMP.@variable(pm.model,
-            base_name="$(nw)_srating_$(i)",
+    srating = Dict(i => JuMP.@variable(pm.model,
+            base_name="srating_$(i)",
         ) for i in converter_ids
     )
 
-    for (i,gen) in PMD.ref(pm, nw, :gen)
+    for (n, nw) in PMD.nws(pm)
+        PMD.var(pm, n)[:srating] = srating
+    end
+
+    for (i,gen) in PMD.ref(pm, 1, :gen)
         if i in converter_ids
-            PMD.set_lower_bound.(srating[i], gen["srating_min"])
-            PMD.set_upper_bound.(srating[i], gen["srating_max"])
+            PMD.set_lower_bound.(PMD.var(pm, 1)[:srating][i], gen["srating_min"])
+            PMD.set_upper_bound.(PMD.var(pm, 1)[:srating][i], gen["srating_max"])
         end
     end
 
@@ -248,11 +252,11 @@ end
 
 
 """
-function build_mc_opf_mx(
+function build_mc_opf_sizing(
     pm::AbstractExplicitNeutralIVRModel
 )
 
-constructor for OPF in current-voltage variable space with explicit neutrals including reconfigurable inverters
+constructor for OPF sizing in current-voltage variable space with explicit neutrals including reconfigurable inverters
 """
 function build_mc_opf_sizing(pm::PMD.AbstractExplicitNeutralIVRModel)
     converter_branches = [branch["index"] for (i, branch) in pm.data["branch"] if occursin("inverter_branch", branch["name"])]
@@ -358,5 +362,127 @@ function build_mc_opf_sizing(pm::PMD.AbstractExplicitNeutralIVRModel)
     # PMD.objective_mc_min_fuel_cost(pm)
     # objective_mc_min_IUF(pm)
     objective_mc_min_max_phase_current(pm)
+    # objective_mc_min_ref_branch_loss(pm)
+end
+
+
+
+
+
+"""
+function build_mn_mc_opf_sizing(
+    pm::AbstractExplicitNeutralIVRModel
+)
+
+constructor for multi-network OPF sizing in current-voltage variable space with explicit neutrals including reconfigurable inverters
+"""
+function build_mn_mc_opf_sizing(pm::PMD.AbstractExplicitNeutralIVRModel)
+    converter_branches = [branch["index"] for (i, branch) in pm.data["nw"]["1"]["branch"] if occursin("inverter_branch", branch["name"])]
+    converter_ids, converter_bus_ids, converter_branch_ids = get_pv_bus_branch(pm.ref[:it][:pmd][:nw][1])  # maybe output branch_ids and arcs seperately?
+    branch_converters = Dict(branch_id[1] => converter_ids[i] for (i, branch_id) in enumerate(converter_branch_ids))
+
+
+    variable_mc_generator_power_rating(pm)
+
+    # Variables
+    for (n, network) in PMD.nws(pm)
+        PMD.variable_mc_bus_voltage(pm; nw=n)
+        PMD.variable_mc_branch_current(pm; nw=n)
+        PMD.variable_mc_load_current(pm; nw=n)
+        PMD.variable_mc_load_power(pm; nw=n)
+        PMD.variable_mc_generator_current(pm; nw=n)
+        PMD.variable_mc_generator_power(pm; nw=n)
+        # variable_mc_generator_current(pm; nw=n)
+        # variable_mc_generator_power(pm; nw=n)
+        PMD.variable_mc_transformer_current(pm; nw=n)
+        PMD.variable_mc_transformer_power(pm; nw=n)
+        PMD.variable_mc_switch_current(pm; nw=n)
+
+        if pm.setting["dc_link"]
+            variable_mc_converter_pdclink(pm; nw=n)
+            # PMD.var(pm, 0)[:pdc_link_sqr] = Dict{Int, Any}()
+        end
+
+        # Constraints
+        for i in PMD.ids(pm, n, :bus)
+
+            if i in PMD.ids(pm, n, :ref_buses)
+                PMD.constraint_mc_voltage_reference(pm, i; nw=n)
+            end
+
+            PMD.constraint_mc_voltage_absolute(pm, i; nw=n)
+            PMD.constraint_mc_voltage_pairwise(pm, i; nw=n)
+        end
+
+        # components should be constrained before KCL, or the bus current variables might be undefined
+
+        for id in PMD.ids(pm, n, :gen)
+            if id ∈ converter_ids  # Generators connected with inverter
+
+                constraint_mc_generator_power_rating(pm, id; nw=n)
+                PMD.constraint_mc_generator_current(pm, id; nw=n)
+                # constraint_mc_generator_current(pm, id; nw=n)
+                constraint_mc_generator_current_limit_rating(pm, id; nw=n)
+                
+                if pm.setting["dc_link"]
+                    # constraint_mc_inverter_dc_link_ripple_power(pm, id; nw=n)
+                    constraint_mc_converter_pdclink(pm, id; nw=n)
+                end
+
+            else  # Other generators
+                PMD.constraint_mc_generator_power(pm, id; nw=n)
+                PMD.constraint_mc_generator_current(pm, id; nw=n)
+            end
+        end
+
+        for id in PMD.ids(pm, n, :load)
+            PMD.constraint_mc_load_power(pm, id; nw=n)
+            PMD.constraint_mc_load_current(pm, id; nw=n)
+        end
+
+        for i in PMD.ids(pm, n, :transformer)
+            PMD.constraint_mc_transformer_voltage(pm, i; nw=n)
+            PMD.constraint_mc_transformer_current(pm, i; nw=n)
+
+            PMD.constraint_mc_transformer_thermal_limit(pm, i; nw=n)
+        end
+
+        for i in PMD.ids(pm, n, :branch)
+
+            if i ∈ converter_branches
+                PMD.constraint_mc_current_from(pm, i; nw=n)
+                PMD.constraint_mc_current_to(pm, i; nw=n)
+                PMD.constraint_mc_bus_voltage_drop(pm, i; nw=n)
+                PMD.constraint_mc_branch_current_limit(pm, i; nw=n)
+
+            else  # normal branch
+                PMD.constraint_mc_current_from(pm, i; nw=n)
+                PMD.constraint_mc_current_to(pm, i; nw=n)
+                PMD.constraint_mc_bus_voltage_drop(pm, i; nw=n)
+                PMD.constraint_mc_branch_current_limit(pm, i; nw=n)
+                # PMD.constraint_mc_thermal_limit_from(pm, i; nw=n)
+                # PMD.constraint_mc_thermal_limit_to(pm, i; nw=n)
+            end
+
+        end
+
+        for i in PMD.ids(pm, n, :switch)
+            PMD.constraint_mc_switch_current(pm, i; nw=n)
+            PMD.constraint_mc_switch_state(pm, i; nw=n)
+
+            PMD.constraint_mc_switch_current_limit(pm, i; nw=n)
+            PMD.constraint_mc_switch_thermal_limit(pm, i; nw=n)
+        end
+
+        for i in PMD.ids(pm, n, :bus)
+            PMD.constraint_mc_current_balance(pm, i; nw=n)
+        end
+
+    end
+
+    # Objective
+    PMD.objective_mc_min_fuel_cost(pm)
+    # objective_mc_min_IUF(pm)
+    # objective_mc_min_max_phase_current(pm)
     # objective_mc_min_ref_branch_loss(pm)
 end

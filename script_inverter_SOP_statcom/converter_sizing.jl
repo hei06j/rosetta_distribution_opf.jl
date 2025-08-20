@@ -77,6 +77,7 @@ function build_data_math(data_path; sbase=0.8, setting=nothing)
 end
 
 
+
 ## ##################### Conventional inverter #####################
 setting = Dict("dc_link" => true)
 
@@ -91,9 +92,31 @@ result = PMD.optimize_model!(model, optimizer=ipopt_solver)
 
 result["solution"]["gen"]["1"]
 
+
+## ##################### Conventional inverter #####################
+setting = Dict("dc_link" => true)
+
+sbase = 1
+data_math, Ibase = build_data_math(data_path; setting=setting, sbase=sbase)
+# data_math["gen"]["1"]["c_rating"] = [30 ; 30 ; 30 ; 100] / Ibase  # inverter branch conductor ratings
+
+PMD.add_start_vrvi!(data_math)
+mn_data = IM.replicate(data_math, 3, PMD._pmd_global_keys)
+PMD.make_multinetwork(mn_data)
+
+for (n, nw) in mn_data["nw"]
+    nw["per_unit"] = true
+end
+
+model = PMD.instantiate_mc_model(mn_data, PMD.IVRENPowerModel, RPMD.build_mn_mc_opf_sizing; setting=setting)
+result = PMD.optimize_model!(model, optimizer=ipopt_solver)
+
+
+[sol["gen"]["1"]["srating"] for (n, sol) in result["solution"]["nw"]]
+
+
 ## TODOs
 """
-    - make multi-period
     - add different objective functions 
     - how to include batteries?
     - scenarios
