@@ -32,8 +32,11 @@ function build_inverter_case(data_eng, setting)
     pv_gen_ids = [i for (i, gen) in data_math["gen"] if !occursin("source", gen["name"])]
     for gen_id in pv_gen_ids
         RPMD.add_inverter_losses!(data_math, gen_id; c_rating_a=30*ones(3))
-        data_math["gen"][gen_id]["srating_min"] = 0.0
+        data_math["gen"][gen_id]["srating_min"] = 1
         data_math["gen"][gen_id]["srating_max"] = 10
+
+        data_math["gen"][gen_id]["pdcrating_min"] = 1
+        data_math["gen"][gen_id]["pdcrating_max"] = 10
     end
 
     return data_math
@@ -113,7 +116,6 @@ result = PMD.optimize_model!(model, optimizer=ipopt_solver)
 
 
 result["solution"]["nw"]["1"]["gen"]["1"]
-
 
 ## TODOs
 """

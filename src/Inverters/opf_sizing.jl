@@ -22,10 +22,10 @@ function variable_mc_generator_power_rating(pm::PMD.ExplicitNeutralModels; nw::I
         PMD.var(pm, n)[:srating] = srating
     end
 
-    for (i,gen) in PMD.ref(pm, 1, :gen)
+    for (i,gen) in PMD.ref(pm, nw, :gen)
         if i in converter_ids
-            PMD.set_lower_bound.(PMD.var(pm, 1)[:srating][i], gen["srating_min"])
-            PMD.set_upper_bound.(PMD.var(pm, 1)[:srating][i], gen["srating_max"])
+            PMD.set_lower_bound.(PMD.var(pm, nw)[:srating][i], gen["srating_min"])
+            PMD.set_upper_bound.(PMD.var(pm, nw)[:srating][i], gen["srating_max"])
         end
     end
 
@@ -54,8 +54,10 @@ function variable_mc_converter_pdclink(pm::PMD.ExplicitNeutralModels; nw::Int=PM
     if bounded
         for (i,gen) in PMD.ref(pm, nw, :gen)
             if i in converter_ids
-                PMD.set_lower_bound.(pdclink_sqr[i], gen["pdcmin"])
-                PMD.set_upper_bound.(pdclink_sqr[i], gen["pdcmax"])
+                # PMD.set_lower_bound.(pdclink_sqr[i], gen["pdcmin"]^2)
+                # PMD.set_upper_bound.(pdclink_sqr[i], gen["pdcmax"]^2)
+                PMD.set_lower_bound.(pdclink_sqr[i], 0)
+                PMD.set_upper_bound.(pdclink_sqr[i], gen["pdcrating_max"]^2)
             end
         end
     end
@@ -63,6 +65,50 @@ function variable_mc_converter_pdclink(pm::PMD.ExplicitNeutralModels; nw::Int=PM
     report && IM.sol_component_value(pm, PMD.pmd_it_sym, nw, :gen, :pdclink_sqr, converter_ids, pdclink_sqr)
 end
 
+
+
+"""
+	function variable_mc_converter_pdclink(
+		pm::ExplicitNeutralModels;
+		nw::Int=nw_id_default,
+		report::Bool=true
+	)
+
+Creates generator active power variables `:pg` for models with explicit neutrals
+"""
+function variable_mc_converter_pdcrating(pm::PMD.ExplicitNeutralModels; nw::Int=PMD.nw_id_default, report::Bool=true)
+    converter_ids = [1] # TODO fix this
+
+    pdcrating = Dict(i => JuMP.@variable(pm.model,
+            base_name="pdcrating_$(i)",
+        ) for i in converter_ids
+    )
+
+    for (n, nw) in PMD.nws(pm)
+        PMD.var(pm, n)[:pdcrating] = pdcrating
+    end
+
+    for (i,gen) in PMD.ref(pm, nw, :gen)
+        if i in converter_ids
+            PMD.set_lower_bound.(PMD.var(pm, nw)[:pdcrating][i], gen["pdcrating_min"])
+            PMD.set_upper_bound.(PMD.var(pm, nw)[:pdcrating][i], gen["pdcrating_max"])
+        end
+    end
+
+    report && IM.sol_component_value(pm, PMD.pmd_it_sym, nw, :gen, :pdcrating, converter_ids, pdcrating)
+end
+
+
+function constraint_mc_converter_pdclink_rating(pm::PMD.ExplicitNeutralModels, id::Int; nw::Int=PMD.nw_id_default)
+    constraint_mc_converter_pdclink_rating(pm, nw, id)
+end
+
+function constraint_mc_converter_pdclink_rating(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int)
+    pdclink_sqr = PMD.var(pm, nw, :pdclink_sqr, id)
+    pdcrating = PMD.var(pm, nw, :pdcrating, id)
+
+    JuMP.@constraint(pm.model, pdclink_sqr <= pdcrating^2)
+end
 
 
 """
@@ -251,6 +297,17 @@ function constraint_mc_generator_current_limit_rating(pm::PMD.AbstractExplicitNe
 end
 
 
+function objective_mc_min_sizing(pm::PMD.AbstractUnbalancedPowerModel)
+    id = 1
+    n = 1
+    obj = PMD.var(pm, n, :srating, id) + PMD.var(pm, n, :pdcrating, id)
+    # obj = sum(
+    #        PMD.var(pm, n, :srating, id) + PMD.var(pm, n, :pdcrating, id)
+    #     for (n, nw_ref) in PMD.nws(pm))
+
+    return JuMP.@objective(pm.model, Min, obj)
+end
+
 """
 function build_mc_opf_sizing(
     pm::AbstractExplicitNeutralIVRModel
@@ -382,7 +439,8 @@ function build_mn_mc_opf_sizing(pm::PMD.AbstractExplicitNeutralIVRModel)
     branch_converters = Dict(branch_id[1] => converter_ids[i] for (i, branch_id) in enumerate(converter_branch_ids))
 
 
-    variable_mc_generator_power_rating(pm)
+    variable_mc_generator_power_rating(pm; nw=1)
+    variable_mc_converter_pdcrating(pm; nw=1)
 
     # Variables
     for (n, network) in PMD.nws(pm)
@@ -427,6 +485,7 @@ function build_mn_mc_opf_sizing(pm::PMD.AbstractExplicitNeutralIVRModel)
                 if pm.setting["dc_link"]
                     # constraint_mc_inverter_dc_link_ripple_power(pm, id; nw=n)
                     constraint_mc_converter_pdclink(pm, id; nw=n)
+                    constraint_mc_converter_pdclink_rating(pm, id; nw=n)
                 end
 
             else  # Other generators
@@ -481,7 +540,8 @@ function build_mn_mc_opf_sizing(pm::PMD.AbstractExplicitNeutralIVRModel)
     end
 
     # Objective
-    PMD.objective_mc_min_fuel_cost(pm)
+    objective_mc_min_sizing(pm)
+    # PMD.objective_mc_min_fuel_cost(pm)
     # objective_mc_min_IUF(pm)
     # objective_mc_min_max_phase_current(pm)
     # objective_mc_min_ref_branch_loss(pm)
