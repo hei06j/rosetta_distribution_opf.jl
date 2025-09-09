@@ -29,7 +29,7 @@ function variable_mc_generator_power_rating(pm::PMD.ExplicitNeutralModels; nw::I
         end
     end
 
-    report && IM.sol_component_value(pm, PMD.pmd_it_sym, nw, :gen, :srating, converter_ids, srating)
+    report && IM.sol_component_value(pm, PMD.pmd_it_sym, 1, :gen, :srating, converter_ids, srating)
 end
 
 

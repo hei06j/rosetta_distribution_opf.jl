@@ -112,7 +112,7 @@ model = PMD.instantiate_mc_model(mn_data, PMD.IVRENPowerModel, RPMD.build_mn_mc_
 result = PMD.optimize_model!(model, optimizer=ipopt_solver)
 
 
-[sol["gen"]["1"]["srating"] for (n, sol) in result["solution"]["nw"]]
+result["solution"]["nw"]["1"]["gen"]["1"]
 
 
 ## TODOs
