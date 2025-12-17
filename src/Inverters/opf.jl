@@ -187,8 +187,8 @@ function build_mc_opf_mx(pm::PMD.AbstractExplicitNeutralIVRModel)
     for id in PMD.ids(pm, :gen)
         if id ∈ gen_ids  # Generators connected with inverter
             constraint_mc_generator_power(pm, id)
-            PMD.constraint_mc_generator_current(pm, id)
-            # constraint_mc_generator_current(pm, id)
+            # PMD.constraint_mc_generator_current(pm, id)
+            constraint_mc_generator_current(pm, id)
             constraint_mc_generator_current_limit(pm, id)
             
             if pm.setting["dc_link"]

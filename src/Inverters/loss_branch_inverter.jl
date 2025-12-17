@@ -45,9 +45,9 @@ function add_inverter_losses!(data_math, gen_id; c_rating_a=0, reconfigurable=fa
     zbase = (vbase * vbase_factor)^2 / (sbase * sbace_factor)
     vbase_max = vbase*1.1  # [V]
 
-    Rf = 0.015
-    Lf = 0.42E-3
-    Cf = 0.33E-9
+    Rf = 0#0.015
+    Lf = 0#0.42E-3
+    Cf = 0#0.33E-9
     new_branch_id = length(data_math["branch"]) + 1
     data_math["branch"]["$new_branch_id"] = Dict{String, Any}()
     data_math["branch"]["$new_branch_id"]["rate_a"] = [1, 1, 1, 1]*1000 #[Inf, Inf, Inf, Inf]

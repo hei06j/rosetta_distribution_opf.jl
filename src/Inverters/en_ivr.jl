@@ -313,7 +313,7 @@ end
 
 
 """
-	function constraint_mc_generator_current_wye(
+	function constraint_mc_generator_current_limit(
 		pm::AbstractExplicitNeutralIVRModel,
 		nw::Int,
 		id::Int,
@@ -712,17 +712,16 @@ function constraint_mc_bus_voltage_magnitude_negative_sequence(pm::PMD.AbstractU
         (vi_a + a2re*vi_b + a2im*vr_b + are*vi_c + aim*vr_c)/3
     )
     # square of magnitude of U-, |U-|^2
-    vmnegsqr = JuMP.@expression(pm.model, vreneg^2+vimneg^2)
+    vmnegsqr = JuMP.@expression(pm.model, vreneg^2 + vimneg^2)
 
 
     PMD.var(pm, nw, :vmnegsqr)[bus_id] = vmnegsqr
     PMD.sol(pm, nw, :bus, bus_id)[:vmnegsqr] = vmnegsqr
 
-    vmneg = PMD.var(pm, nw, :vmneg)[bus_id] = JuMP.@variable(pm.model, base_name="$(nw)_vmneg_$bus_id", start = 0)
+    vmneg = PMD.var(pm, nw, :vmneg)[bus_id] = JuMP.@variable(pm.model, base_name="$(nw)_vmneg_$bus_id", start = 0, lower_bound=0)
     PMD.sol(pm, nw, :bus, bus_id)[:vmneg] = vmneg
     
     JuMP.@constraint(pm.model, vmneg * vmneg == vmnegsqr)
-    JuMP.@constraint(pm.model, vmneg >= 0)
 
     # # finally, apply constraint
     # JuMP.@constraint(pm.model, vmnegsqr <= vmnegmax^2)
