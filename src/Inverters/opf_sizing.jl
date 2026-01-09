@@ -361,7 +361,8 @@ function objective_mc_min_sizing(pm::PMD.AbstractUnbalancedPowerModel)
     id = 1
     n = 1
     sourceid = 2
-    obj = PMD.var(pm, n, :srating, id) * 339.96 + PMD.var(pm, n, :pdcrating, id) * 69.72 + 1000 * sum(PMD.var(pm, n, :pg, sourceid).^2)
+    # obj = PMD.var(pm, n, :srating, id) * 339.96 + PMD.var(pm, n, :pdcrating, id) * 69.72 + 1000 * sum(PMD.var(pm, n, :pg, sourceid).^2)
+    obj = PMD.var(pm, n, :srating, id) * 339.96 + PMD.var(pm, n, :pdcrating, id) * 69.72  #1000 * sum(PMD.var(pm, n, :pg, sourceid).^2)
     # obj = sum(
     #        PMD.var(pm, n, :srating, id) + PMD.var(pm, n, :pdcrating, id)
     #     for (n, nw_ref) in PMD.nws(pm))

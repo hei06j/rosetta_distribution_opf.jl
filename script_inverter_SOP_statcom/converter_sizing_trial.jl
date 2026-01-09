@@ -80,13 +80,13 @@ function build_data_math(data_path; sbase=1, setting=nothing, sratings=[20, 80],
 end
 
 ##
-setting = Dict("dc_link" => true)# "vuf_range" => (0.0, 0.02))
+setting = Dict("dc_link" => true, "vuf_range" => (0.0, 0.02))
 
 sbase = 1
-sratings = [1, 100]
-pdcratings = [1, 50]
+sratings = [1, 30]
+pdcratings = [0, 0]
 
-pd_peak = 15.0
+pd_peak = 9.0
 qd_peak = 1.0
 
 data_math, Ibase = build_data_math(data_path; sratings=sratings, pdcratings=pdcratings, setting=setting, sbase=sbase)
@@ -108,7 +108,7 @@ end
 
 normalized_load_a = [9.231668355, 8.708293005, 8.284840935, 8.113415685, 8.12055168, 8.388332595, 9.013518645000001, 9.747059055000001, 2.7997820064, 2.93546004, 2.914690196, 3.041727568, 3.169100912, 3.42147692, 3.6439375, 3.86539076, 10.0, 9.95703895, 9.69301121, 9.350277380000001, 9.061107309999999, 8.461982129999999, 7.7090232599999995, 6.80178199]
 normalized_load_b = [4.308111899, 4.063870069, 3.866259103, 3.7862606530000003, 3.7895907839999996, 3.9145552109999997, 4.206308701, 4.548627559000001, 6.99945516, 7.338650100000001, 7.28672549, 7.604318920000001, 7.922752280000001, 8.5536923, 9.10984375, 9.6634769, 0.4, 0.39828155800000004, 0.38772044840000003, 0.37401109520000003, 0.3624442924, 0.33847928520000004, 0.3083609304, 0.2720712796]
-normalized_load_c = [0.615444557, 0.580552867, 0.552322729, 0.540894379, 0.541370112, 0.559222173, 0.600901243, 0.649803937, 4.199673096, 4.40319006, 4.372035294, 4.562591352, 4.753651368, 5.13221538, 5.46590625, 5.79808614, 15.0, 14.935558425, 14.539516814999999, 14.02541607, 13.591660964999999, 12.692973195, 11.56353489, 10.202672985]
+normalized_load_c = [-0.615444557, -0.580552867, -0.552322729, -0.540894379, 0.541370112, 0.559222173, 0.600901243, 0.649803937, 4.199673096, 4.40319006, 4.372035294, 4.562591352, 4.753651368, 5.13221538, 5.46590625, 5.79808614, 15.0, 14.935558425, 14.539516814999999, 14.02541607, 13.591660964999999, 12.692973195, 11.56353489, 10.202672985]
 
 pd_load_a = [pd_peak * val for val in normalized_load_a]
 qd_load_a = [qd_peak * val for val in normalized_load_a]
@@ -147,19 +147,24 @@ model = PMD.instantiate_mc_model(mn_data, PMD.IVRENPowerModel, RPMD.build_mn_mc_
 
 result = PMD.optimize_model!(model, optimizer=ipopt_solver)
 @show result["termination_status"]
-vseq = Dict()
-vuf = Dict()
-for (n, nw) in result["solution"]["nw"]
-    vseq[n] = [RPMD.get_sequence_components(bus["vr"][1:3]+im*bus["vi"][1:3])[3] for (i,bus) in nw["bus"]]
-    vuf[n] = [v[3] / v[2] * 100 for v in vseq[n]]
-end
-@show vuf
 
 vuf = Dict()
+vpos = Dict()
+vneg = Dict()
 for (n, nw) in result["solution"]["nw"]
     vuf[n] = [bus["vmneg"]/bus["vmpos"]*100 for (i,bus) in nw["bus"]]
+    vpos[n] = [bus["vmpos"]*100 for (i,bus) in nw["bus"]]
+    vneg[n] = [bus["vmneg"]*100 for (i,bus) in nw["bus"]]
 end
 @show vuf
+@show vpos
+@show vneg
+
+srating = result["solution"]["nw"]["1"]["gen"]["1"]["srating"]
+pdcrating = result["solution"]["nw"]["1"]["gen"]["1"]["pdcrating"]
+
+@show srating, pdcrating
+
 
 ##
 Vdc_nominal = 1100  
