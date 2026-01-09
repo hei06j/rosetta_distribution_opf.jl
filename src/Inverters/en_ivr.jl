@@ -804,9 +804,9 @@ vuf = |U-|/|U+|
 |U-|^2 <= vufmax^2*|U+|^2
 """
 function constraint_mc_bus_voltage_magnitude_vuf(pm::PMD.AbstractUnbalancedIVRModel, nw::Int, bus_id::Int, vufmax::Real)
-    if !haskey(PMD.var(pm, nw_id_default), :vmpossqr)
-        PMD.var(pm, nw_id_default)[:vmpossqr] = Dict{Int, Any}()
-        PMD.var(pm, nw_id_default)[:vmnegsqr] = Dict{Int, Any}()
+    if !haskey(PMD.var(pm, nw), :vmpossqr)
+        PMD.var(pm, nw)[:vmpossqr] = Dict{Int, Any}()
+        PMD.var(pm, nw)[:vmnegsqr] = Dict{Int, Any}()
     end
     (vr_a, vr_b, vr_c) = [PMD.var(pm, nw, :vr, bus_id)[i] for i in 1:3]
     (vi_a, vi_b, vi_c) = [PMD.var(pm, nw, :vi, bus_id)[i] for i in 1:3]
@@ -836,9 +836,13 @@ function constraint_mc_bus_voltage_magnitude_vuf(pm::PMD.AbstractUnbalancedIVRMo
     vmnegsqr = JuMP.@expression(pm.model, vreneg^2+vimneg^2)
     # finally, apply constraint
     JuMP.@constraint(pm.model, vmnegsqr <= vufmax^2*vmpossqr)
+
     # DEBUGGING: save references for post check
-    #PMD.var(pm, nw_id_default, :vmpossqr)[bus_id] = vmpossqr
-    #PMD.var(pm, nw_id_default, :vmnegsqr)[bus_id] = vmnegsqr
+    PMD.var(pm, nw, :vmpossqr)[bus_id] = vmpossqr
+    PMD.var(pm, nw, :vmnegsqr)[bus_id] = vmnegsqr
+
+    PMD.sol(pm, nw, :bus, bus_id)[:vmpos] = sqrt(vmpossqr)
+    PMD.sol(pm, nw, :bus, bus_id)[:vmneg] = sqrt(vmnegsqr)
 end
 
 
@@ -852,11 +856,11 @@ function constraint_mc_bus_voltage_balance(pm::PMD.AbstractUnbalancedACRModel, b
     # @assert(length(PMD.ref(pm, nw, :conductor_ids))==3)
 
     bus = PMD.ref(pm, nw, :bus, bus_id)
-    constraint_mc_bus_voltage_magnitude_negative_sequence(pm, nw, bus_id, 0)
+    # constraint_mc_bus_voltage_magnitude_negative_sequence(pm, nw, bus_id, 0)
 
-    # if haskey(bus, "vm_vuf_max")
-    #     constraint_mc_bus_voltage_magnitude_vuf(pm, nw, bus_id, bus["vm_vuf_max"])
-    # end
+    if haskey(bus, "vm_vuf_max")
+        constraint_mc_bus_voltage_magnitude_vuf(pm, nw, bus_id, bus["vm_vuf_max"])
+    end
 
     # if haskey(bus, "vm_seq_neg_max")
     #     constraint_mc_bus_voltage_magnitude_negative_sequence(pm, nw, bus_id, bus["vm_seq_neg_max"])

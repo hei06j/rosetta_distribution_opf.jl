@@ -1,4 +1,3 @@
-
 """
 function variable_mc_generator_power_rating(
     pm::ExplicitNeutralModels;
@@ -148,6 +147,7 @@ For IVR models with explicit neutrals,
 creates non-linear expressions for the inverter dc link power `:pdc_link_sqr`
 of wye-connected generators as a function of voltage and current
 """
+
 function constraint_mc_converter_pdclink(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, id::Int, bus_id::Int, connections::Vector{Int}, pdcmin::Real, pdcmax::Real; report::Bool=true)
     # bus_id = 1
     vr = PMD.var(pm, nw, :vr, bus_id)
@@ -158,9 +158,11 @@ function constraint_mc_converter_pdclink(pm::PMD.AbstractNLExplicitNeutralIVRMod
     cig_bus = PMD.var(pm, nw, :cig_bus)[id]
     pdclink_sqr = PMD.var(pm, nw, :pdclink_sqr, id)
     
-    @show pdclink_sqr
-    @show connections
-    @show [vr[p]*crg_bus[idx] for (idx, p) in enumerate(connections)]
+    println("Time step $(nw): pdclink_sqr = $(pdclink_sqr), connections = $(connections), expr = $([vr[p]*crg_bus[idx] for (idx, p) in enumerate(connections)])")
+
+    # @show pdclink_sqr
+    # @show connections
+    # @show [vr[p]*crg_bus[idx] for (idx, p) in enumerate(connections)]
 
     JuMP.@constraint(pm.model,  pdclink_sqr ==
         sum( vr[p]*crg_bus[idx] .- vi[p]*cig_bus[idx] for (idx, p) in enumerate(connections) )^2
@@ -297,10 +299,69 @@ function constraint_mc_generator_current_limit_rating(pm::PMD.AbstractExplicitNe
 end
 
 
+"""
+    constraint_mc_bus_vuf(pm, id; nw, vufmin=0.0, vufmax=0.02)
+
+Enforces vufmin <= VUF <= vufmax at a given bus.
+"""
+function constraint_mc_bus_vuf(pm::PMD.ExplicitNeutralModels, id::Int; nw::Int=PMD.nw_id_default, vufmin::Real=0.0, vufmax::Real=0.02)
+    
+    constraint_mc_bus_vuf(pm, nw, id, vufmin, vufmax)
+end
+
+
+function constraint_mc_bus_vuf(pm::PMD.AbstractNLExplicitNeutralIVRModel, nw::Int, bus_id::Int, vufmin::Real, vufmax::Real)
+    @show vufmin, vufmax
+    
+    vr = PMD.var(pm, nw, :vr, bus_id)
+    vi = PMD.var(pm, nw, :vi, bus_id)
+
+    # --- Extract phases ---
+    Va = (vr[1], vi[1])
+    Vb = (vr[2], vi[2])
+    Vc = (vr[3], vi[3])
+
+    # --- a and a² operators ---
+    a_re  = -0.5
+    a_im  =  0.866025403784
+    a2_re = -0.5
+    a2_im = -0.866025403784
+
+    # --- Positive sequence ---
+    Vp_re = (Va[1] +
+             (a_re*Vb[1] - a_im*Vb[2]) +
+             (a2_re*Vc[1] - a2_im*Vc[2])) / 3
+
+    Vp_im = (Va[2] +
+             (a_re*Vb[2] + a_im*Vb[1]) +
+             (a2_re*Vc[2] + a2_im*Vc[1])) / 3
+
+    # --- Negative sequence ---
+    Vn_re = (Va[1] +
+             (a2_re*Vb[1] - a2_im*Vb[2]) +
+             (a_re*Vc[1] - a_im*Vc[2])) / 3
+
+    Vn_im = (Va[2] +
+             (a2_re*Vb[2] + a2_im*Vb[1]) +
+             (a_re*Vc[2] + a_im*Vc[1])) / 3
+
+    # --- Upper bound: |V-|^2 <= vmax^2 |V+|^2 ---
+    JuMP.@constraint(pm.model,
+        Vn_re^2 + Vn_im^2 <= (vufmax^2)*(Vp_re^2 + Vp_im^2)
+    )
+
+    # --- Lower bound: |V-|^2 >= vmin^2 |V+|^2 ---
+    JuMP.@constraint(pm.model,
+        Vn_re^2 + Vn_im^2 >= (vufmin^2)*(Vp_re^2 + Vp_im^2)
+    )
+end
+
+
 function objective_mc_min_sizing(pm::PMD.AbstractUnbalancedPowerModel)
     id = 1
     n = 1
-    obj = PMD.var(pm, n, :srating, id) + PMD.var(pm, n, :pdcrating, id)
+    sourceid = 2
+    obj = PMD.var(pm, n, :srating, id) * 339.96 + PMD.var(pm, n, :pdcrating, id) * 69.72 + 1000 * sum(PMD.var(pm, n, :pg, sourceid).^2)
     # obj = sum(
     #        PMD.var(pm, n, :srating, id) + PMD.var(pm, n, :pdcrating, id)
     #     for (n, nw_ref) in PMD.nws(pm))
@@ -467,9 +528,15 @@ function build_mn_mc_opf_sizing(pm::PMD.AbstractExplicitNeutralIVRModel)
             if i in PMD.ids(pm, n, :ref_buses)
                 PMD.constraint_mc_voltage_reference(pm, i; nw=n)
             end
-
+            
             PMD.constraint_mc_voltage_absolute(pm, i; nw=n)
             PMD.constraint_mc_voltage_pairwise(pm, i; nw=n)
+
+            # vuf_range = pm.setting["vuf_range"]
+            # constraint_mc_bus_vuf(pm, i; nw=n, vufmin=vuf_range[1], vufmax=vuf_range[2])
+
+            constraint_mc_bus_voltage_balance(pm, i; nw=n)
+
         end
 
         # components should be constrained before KCL, or the bus current variables might be undefined
